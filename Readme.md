@@ -149,3 +149,7 @@ Inspect before editing. Preserve existing working code. Use clear errors rather 
 If an important product decision is unclear, state your assumption and ask only when the decision blocks safe implementation.
 
 Start with Stage 1. Do not generate the whole application at once
+
+
+
+
