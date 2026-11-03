@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Retro photo-lab theme: purane kaagaz jaisa background, film camera wale colors */
+@theme {
+  --color-paper: #f1e8d6; /* page background (purana kaagaz) */
+  --color-paper-light: #fbf7ee; /* polaroid ka white frame */
+  --color-ink: #2b2118; /* dark brown-black text */
+  --color-muted: #7a6a58;
+  --color-line: #d9cbb0;
+  --color-rust: #c4512f;
+  --color-mustard: #d99a2b;
+  --color-teal: #2d6b66;
+  --color-plum: #6b3a5b;
+
+  --font-sans: var(--font-courier), ui-monospace, monospace; /* typewriter */
+  --font-serif: var(--font-dm-serif), Georgia, serif; /* headings */
+  --font-hand: var(--font-caveat), cursive; /* handwriting (captions) */
+}
+
+/* Background pe halka "grain" (film jaisa noise). Ye ek chhoti SVG image hai jo repeat hoti hai. */
+body {
+  background-color: var(--color-paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.17 0 0 0 0 0.13 0 0 0 0 0.09 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--color-ink);
+}
+
+@layer components {
+  /* Buttons: retro "offset shadow" — hover pe thoda upar uthta hai */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm border-2 border-ink bg-ink px-5 py-2.5 text-sm font-bold uppercase tracking-wider text-paper-light shadow-[3px_3px_0_var(--color-rust)] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--color-rust)] active:translate-y-0 active:shadow-none disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm border-2 border-ink px-5 py-2.5 text-sm font-bold uppercase tracking-wider shadow-[3px_3px_0_var(--color-ink)] transition hover:-translate-y-0.5 hover:bg-paper-light active:translate-y-0 active:shadow-none;
+  }
+  .field {
+    @apply w-full rounded-sm border-2 border-ink/80 bg-paper-light px-3 py-2.5 text-sm outline-none transition placeholder:text-muted/70 focus:shadow-[3px_3px_0_var(--color-ink)];
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-bold uppercase tracking-[0.2em] text-muted;
+  }
+
+  /* Polaroid ka white frame + halki shadow */
+  .polaroid {
+    @apply bg-paper-light p-3 pb-4 shadow-[0_1px_2px_rgba(0,0,0,0.15),0_10px_24px_-10px_rgba(60,40,20,0.45)];
+  }
+
+  /* Rubber stamp jaisa tag: border aur text same color (currentColor) */
+  .rubber-stamp {
+    @apply inline-flex items-center gap-1.5 rounded-sm border-2 border-current px-2.5 py-1 text-xs font-bold uppercase tracking-widest;
+  }
+
+  /* Purane film camera ki orange date jo photo ke kone mein chhapti thi */
+  .date-stamp {
+    @apply font-bold tracking-widest;
+    color: #ff8a2a;
+    text-shadow: 0 0 4px rgba(255, 120, 30, 0.8);
+  }
+
+  /* Film strip: kaali patti jisme chhote chhed (holes) hain */
+  .film-strip {
+    height: 26px;
+    background-color: var(--color-ink);
+    background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--color-paper) 10px 22px, transparent 22px 32px);
+    background-size: 100% 8px;
+    background-position: 0 center;
+    background-repeat: no-repeat;
+  }
+}
+
+/* Postage stamp ke kinare ke gol chhed (perforation).
+   Trick: "mask" se kinaare pe chhote gol hisse transparent kar dete hain. */
+.postage {
+  --hole: 5px;
+  padding: calc(var(--hole) * 2);
+  background: var(--color-paper-light);
+  mask:
+    radial-gradient(var(--hole), #0000 98%, #000) round calc(-1.5 * var(--hole)) calc(-1.5 * var(--hole)) / calc(3 * var(--hole)) calc(3 * var(--hole)),
+    linear-gradient(#000 0 0) no-repeat 50% / calc(100% - 3 * var(--hole)) calc(100% - 3 * var(--hole));
+}
