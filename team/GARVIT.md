@@ -244,15 +244,30 @@ git push origin main
 
 ---
 
-## 📸 STAGE 5 — Photo Upload (Japinder ke saath milke)
+## 📸 STAGE 5 — Photo Upload + Cloudinary (Tera + Japinder ka kaam)
+
+> **Division:**
+> - **Garvit** → Cloudinary setup, signed upload API, photo database mein save, RLS policies
+> - **Japinder** → `lib/hashtags.ts` — caption se hashtags nikalna aur tags table mein save karna
+> Teri API complete hone ke baad Japinder ki function call hogi automatically.
 
 ### Step 1: Cloudinary account banao
 1. `https://cloudinary.com` pe jao
 2. Free account banao
-3. Dashboard pe Cloud Name, API Key, API Secret copy karo
-4. `.env.local` mein paste karo
+3. Dashboard pe **Cloud Name**, **API Key**, **API Secret** copy karo
+4. `.env.local` mein paste karo:
+```bash
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+NEXT_PUBLIC_CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret   # KABHI browser mein mat daalna
+```
 
-### Step 2: Photos + Events + Tags tables banao (SQL Editor mein)
+### Step 2: Cloudinary package install karo
+```bash
+npm install cloudinary
+```
+
+### Step 3: Photos + Events + Tags tables banao (Supabase SQL Editor mein)
 ```sql
 CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -297,6 +312,173 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE photo_tags ENABLE ROW LEVEL SECURITY;
+
+-- Photos ke liye RLS policies
+CREATE POLICY "Students can view their college photos" ON photos
+  FOR SELECT USING (
+    college_id IN (
+      SELECT college_id FROM profiles WHERE user_id = auth.uid()
+    )
+    AND is_approved = TRUE
+  );
+
+CREATE POLICY "Students can upload photos" ON photos
+  FOR INSERT WITH CHECK (
+    uploader_id IN (SELECT id FROM profiles WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Students can delete own photos" ON photos
+  FOR DELETE USING (
+    uploader_id IN (SELECT id FROM profiles WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Anyone can view tags" ON tags FOR SELECT USING (true);
+CREATE POLICY "Anyone can view photo_tags" ON photo_tags FOR SELECT USING (true);
+```
+
+### Step 4: Cloudinary Signature API banao
+`app/api/cloudinary-signature/route.ts`:
+```typescript
+// Yeh server-side route hai — browser ko KABHI API secret nahi milta
+// Browser pehle yahan aata hai → signature maangta hai → phir Cloudinary pe jaata hai
+import { NextResponse } from 'next/server'
+import { v2 as cloudinary } from 'cloudinary'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+export async function POST() {
+  // Pehle check karo: user logged in hai?
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options))
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Login karo pehle' }, { status: 401 })
+    // 401 = Unauthorized
+  }
+
+  // Current time (Unix timestamp — seconds mein)
+  const timestamp = Math.round(Date.now() / 1000)
+
+  // Cloudinary signature banao — yeh prove karta hai upload valid hai
+  // API secret se sign hoti hai — isliye sirf server pe hoti hai
+  const signature = cloudinary.utils.api_sign_request(
+    { timestamp, folder: 'camplens' },
+    process.env.CLOUDINARY_API_SECRET!
+  )
+
+  // Browser ko sirf timestamp aur signature bhejo — secret nahi
+  return NextResponse.json({
+    timestamp,
+    signature,
+    cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+  })
+}
+```
+
+### Step 5: Photo Save API banao (upload ke baad call hogi)
+`app/api/photos/route.ts`:
+```typescript
+// Jab Cloudinary pe upload ho jaaye, browser yeh API call karega
+// Photo ki details + Cloudinary URL database mein save karne ke liye
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { processPhotoHashtags } from '@/lib/hashtags'
+// Japinder ki function — hashtags nikaalke save karegi
+
+export async function POST(request: NextRequest) {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(c) { c.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) },
+      },
+    }
+  )
+
+  // User verify karo
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Login karo pehle' }, { status: 401 })
+  }
+
+  // User ka profile lo (college_id ke liye)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, college_id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!profile?.college_id) {
+    return NextResponse.json({ error: 'Pehle college select karo' }, { status: 400 })
+  }
+
+  // Request body se data nikalo
+  const body = await request.json()
+  const { cloudinaryPublicId, imageUrl, thumbnailUrl, caption, eventId } = body
+
+  // Validation — zaroori fields check karo
+  if (!cloudinaryPublicId || !imageUrl) {
+    return NextResponse.json({ error: 'Image URL missing hai' }, { status: 400 })
+  }
+
+  // Photo database mein save karo
+  const { data: photo, error: photoError } = await supabase
+    .from('photos')
+    .insert({
+      uploader_id: profile.id,
+      college_id: profile.college_id,
+      event_id: eventId || null,
+      caption: caption || null,
+      cloudinary_public_id: cloudinaryPublicId,
+      image_url: imageUrl,
+      thumbnail_url: thumbnailUrl || null,
+    })
+    .select('id')
+    .single()
+
+  if (photoError || !photo) {
+    console.error('Photo save error:', photoError?.message)
+    return NextResponse.json({ error: 'Photo save nahi hui' }, { status: 500 })
+  }
+
+  // Japinder ki function call karo — hashtags nikaal ke save karo
+  if (caption) {
+    await processPhotoHashtags(supabase, photo.id, caption, profile.college_id)
+  }
+
+  return NextResponse.json({ success: true, photoId: photo.id })
+}
+```
+
+### Step 6: Git push karo
+```bash
+git add .
+git commit -m "Stage 5: Cloudinary upload API + photo save API ready"
+git push origin main
 ```
 
 ---
@@ -329,23 +511,27 @@ ALTER TABLE photo_tags ENABLE ROW LEVEL SECURITY;
 ```
 CampusLens/
 ├── app/
-│   ├── layout.tsx              ← Root layout (tera)
-│   ├── page.tsx                ← Landing page (tera)
+│   ├── layout.tsx                          ← Root layout (tera)
+│   ├── page.tsx                            ← Landing page (tera)
 │   ├── auth/
-│   │   └── callback/route.ts   ← Auth callback (tera)
-│   ├── login/page.tsx          ← Login page (tera)
-│   ├── signup/page.tsx         ← Signup page (tera)
-│   └── onboarding/page.tsx     ← College selection (tera)
+│   │   └── callback/route.ts               ← Auth callback (tera)
+│   ├── login/page.tsx                      ← Login page (tera)
+│   ├── signup/page.tsx                     ← Signup page (tera)
+│   ├── onboarding/page.tsx                 ← College selection (tera)
+│   └── api/
+│       ├── cloudinary-signature/route.ts   ← Cloudinary signed URL (tera)
+│       └── photos/route.ts                 ← Photo save to DB (tera)
 ├── lib/
 │   ├── supabase/
-│   │   ├── client.ts           ← Browser Supabase client (tera)
-│   │   └── server.ts           ← Server Supabase client (tera)
-│   └── types.ts                ← TypeScript types (tera)
+│   │   ├── client.ts                       ← Browser Supabase client (tera)
+│   │   └── server.ts                       ← Server Supabase client (tera)
+│   ├── hashtags.ts                         ← JAPINDER KA KAAM (woh banayega)
+│   └── types.ts                            ← TypeScript types (tera)
 ├── supabase/
-│   └── migrations/             ← SQL files (tera)
-├── .env.local                  ← Real secrets (KABHI COMMIT MAT KARNA)
-├── .env.example                ← Template (tera)
-└── vercel.json                 ← Deployment config (tera)
+│   └── migrations/                         ← SQL files (tera)
+├── .env.local                              ← Real secrets (KABHI COMMIT MAT KARNA)
+├── .env.example                            ← Template (tera)
+└── vercel.json                             ← Deployment config (tera)
 ```
 
 ---

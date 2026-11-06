@@ -52,10 +52,11 @@ CampusLens/
 │   ├── error.tsx                   🔍 VANSH (error page)
 │   │
 │   └── api/
-│       ├── cloudinary-signature/   📸 JAPINDER
-│       └── search/                 🔍 VANSH
+│       ├── cloudinary-signature/   👑 GARVIT (mushkil — signed URL + auth check)
+│       └── photos/route.ts         👑 GARVIT (photo database mein save)
 │
-├── components/
+├── lib/
+│   ├── hashtags.ts                 📸 JAPINDER (caption → hashtags nikalna + save)
 │   ├── Navbar.tsx                  🎨 KESHAV
 │   └── ui/
 │       ├── LoadingSpinner.tsx      🎨 KESHAV
@@ -78,11 +79,11 @@ CampusLens/
 - **Garvit**: GitHub repo banao, Next.js setup karo, .env.example banao
 - **Japinder, Keshav, Vansh**: Clone karo, branch banao, `npm run dev` chalao
 
-### Din 2-3 (Garvit ka heavy kaam)
-- **Garvit**: Supabase setup, database tables banao, Auth configure karo
-- **Keshav**: Navbar + Landing page design shuru karo
-- **Japinder**: Upload page UI banao (Supabase ready hone ka wait karo)
-- **Vansh**: Error pages + Search UI banao
+### Din 2-3 (Parallel kaam)
+- **Garvit**: Supabase setup, database tables, Auth, Cloudinary signature API, photo save API
+- **Japinder**: `lib/hashtags.ts` — extractHashtags() + saveHashtagsToDatabase() banana
+- **Keshav**: Navbar + Landing page design
+- **Vansh**: Error pages + Search page UI
 
 ### Din 4-5 (Integration)
 - **Japinder**: Cloudinary integrate karo, actual upload karo
