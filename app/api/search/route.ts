@@ -14,11 +14,46 @@ export async function GET(request:NextRequest) {
                 {error: 'Search tag is required/Invalid'},
                 {status: 400}
             )
-            // i was having troble using this next response...so
-            // had to read on teh net how to solve this
-            // got to know that i need to use next response instead
-            // to send the http response to the server else the funciton wil exit
-            
+
         }
-    
+
+        const cleanTag = tag.replace('#','').trim()
+// if we had "#     Damru" now we have "     Damru" so trim gives us "Damru"...that is required
+
+// but it can also be like..."damru" and we need "Damru"
+try {
+    // we will use real query ehre once we have superbase setup
+    const mockResults = [
+      {
+        id: '1',
+        image_url: 'https://picsum.photos/400/300?random=1',
+        caption: `Best night ever! #${cleanTag} #memories`,
+        uploaded_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        image_url: 'https://picsum.photos/400/300?random=2',
+        caption: `College life 🎓 #${cleanTag}`,
+        uploaded_at: new Date().toISOString(),
+      },
+    ]
+
+    // Results return karo
+    return NextResponse.json({
+      results: mockResults,
+      total: mockResults.length,
+      tag: cleanTag,
+    })
+
+  } catch (error) {
+    // Agar kuch gadbad ho
+    console.error('Search error:', error)
+    return NextResponse.json(
+      { error: 'Search mein kuch problem aayi' },
+      { status: 500 }
+      // 500 = Internal Server Error (server ki galti)
+    )
+  }
 }
+
+    
