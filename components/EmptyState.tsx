@@ -1,4 +1,6 @@
-// Jab dikhane ko kuch na ho (jaise search mein 0 result) — ek khaali polaroid aur message.
+// Jab dikhane ko kuch na ho (jaise search mein 0 result) — khaali frame ka illustration + message.
+
+import { EmptyFrame } from "@/components/Illustrations";
 
 interface EmptyStateProps {
   title: string;
@@ -8,16 +10,11 @@ interface EmptyStateProps {
 
 export default function EmptyState({ title, message, children }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center py-16 text-center">
-      <div className="polaroid w-44 rotate-3">
-        <div className="grid aspect-square place-items-center bg-ink/85 text-xs uppercase tracking-widest text-paper/50">
-          No print
-        </div>
-        <p className="mt-2 font-hand text-xl">nothing yet…</p>
-      </div>
-      <h3 className="mt-8 font-serif text-3xl">{title}</h3>
-      <p className="mt-2 max-w-sm text-sm text-muted">{message}</p>
-      {children && <div className="mt-6">{children}</div>}
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <EmptyFrame className="w-48" />
+      <h3 className="mt-6 font-display text-3xl">{title}</h3>
+      <p className="mt-2 max-w-sm text-ink-soft">{message}</p>
+      {children && <div className="mt-7">{children}</div>}
     </div>
   );
 }

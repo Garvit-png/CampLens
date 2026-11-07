@@ -5,11 +5,13 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import EmptyState from "@/components/EmptyState";
+import { ArrowLeftIcon } from "@/components/Icons";
 import ReportButton from "@/components/ReportButton";
-import { filmDate, formatDate, getEventName } from "@/lib/helpers";
+import PhotoImage from "@/components/PhotoImage";
+import { formatDate, getEventName } from "@/lib/helpers";
 import { useSession } from "@/lib/session";
 
-const inks = ["text-rust", "text-teal", "text-plum", "text-ink"];
+const stickerColors = ["bg-sun", "bg-pink-soft", "bg-white", "bg-sky"];
 
 export default function PhotoDetailPage() {
   const { id } = useParams<{ id: string }>(); // URL se id
@@ -20,65 +22,60 @@ export default function PhotoDetailPage() {
 
   if (!photo) {
     return (
-      <EmptyState title="Print not found" message="This photo doesn't exist, or belongs to another campus.">
-        <Link href="/gallery" className="btn">Back to gallery</Link>
+      <EmptyState title="Photo not found" message="It may have been removed, or it belongs to another campus.">
+        <Link href="/gallery" className="btn">Back to the wall</Link>
       </EmptyState>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <Link href="/gallery" className="text-sm font-bold uppercase tracking-wider text-muted hover:text-ink">
-        ← Back to the archive
+    <div className="mx-auto max-w-6xl px-6 py-10 md:py-12">
+      <Link href="/gallery" className="inline-flex items-center gap-2 font-semibold text-ink-soft hover:text-ink">
+        <ArrowLeftIcon className="h-4 w-4" /> Back to the wall
       </Link>
 
-      <div className="mt-10 grid items-start gap-14 md:grid-cols-[3fr_2fr]">
-        {/* Badi polaroid */}
-        <div className="relative -rotate-1">
-          <span className="absolute -top-3 left-10 z-10 h-7 w-24 -rotate-6 bg-mustard/50" aria-hidden="true" />
-          <div className="polaroid p-4 pb-6">
-            <div className="relative overflow-hidden bg-ink/10">
-              <img src={photo.imageUrl} alt={photo.caption} className="w-full object-cover sepia-15" />
-              <span className="date-stamp absolute bottom-3 right-4 text-base">{filmDate(photo.uploadedAt)}</span>
-            </div>
-            <p className="mt-4 font-hand text-4xl leading-none">{photo.caption}</p>
+      <div className="mt-8 grid items-start gap-10 md:grid-cols-[3fr_2fr] lg:gap-14">
+        {/* Badi photo */}
+        <div>
+          <div className="rounded-3xl border-[3px] border-ink bg-white p-3 shadow-[8px_8px_0_var(--color-ink)]">
+            <PhotoImage src={photo.imageUrl} alt={photo.caption} lazy={false} className="aspect-square rounded-2xl" />
           </div>
         </div>
 
-        {/* Details — typewriter wali "back of the photo" feel */}
-        <div className="border-2 border-ink bg-paper-light p-6 shadow-[6px_6px_0_var(--color-ink)]">
-          <p className="label">On the back of this print</p>
-          <h1 className="font-serif text-3xl leading-tight">{getEventName(photo.eventId)}</h1>
+        {/* Details */}
+        <div className="md:sticky md:top-28">
+          <p className="text-lg font-semibold text-pink">{getEventName(photo.eventId)}</p>
+          <h1 className="mt-2 font-display text-4xl leading-[1.05] md:text-5xl">{photo.caption}</h1>
 
-          <dl className="mt-6 space-y-3 border-t border-dashed border-ink/40 pt-5 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Taken by</dt>
-              <dd className="text-right">{photo.uploaderName}</dd>
+          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y-2 border-dashed border-ink/30 py-5">
+            <div className="col-span-2">
+              <dt className="text-sm text-ink-soft">Shot by</dt>
+              <dd className="text-lg font-semibold">{photo.uploaderName}</dd>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Developed</dt>
-              <dd>{formatDate(photo.uploadedAt)}</dd>
+            <div>
+              <dt className="text-sm text-ink-soft">Uploaded</dt>
+              <dd className="font-semibold">{formatDate(photo.uploadedAt)}</dd>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Roll</dt>
-              <dd>{photo.year}</dd>
+            <div>
+              <dt className="text-sm text-ink-soft">Year</dt>
+              <dd className="font-semibold">{photo.year}</dd>
             </div>
           </dl>
 
           {/* Tag pe click → gallery usi tag ke search ke saath khulti hai */}
-          <div className="mt-6 flex flex-wrap gap-3 border-t border-dashed border-ink/40 pt-5">
+          <div className="mt-6 flex flex-wrap gap-3">
             {photo.hashtags.map((tag, index) => (
               <Link
                 key={tag}
                 href={`/gallery?tag=${encodeURIComponent(tag)}`}
-                className={`rubber-stamp ${inks[index % inks.length]} ${index % 2 ? "rotate-1" : "-rotate-1"} hover:rotate-0`}
+                className={`sticker ${stickerColors[index % stickerColors.length]} ${index % 2 ? "rotate-1" : "-rotate-1"}`}
               >
                 #{tag}
               </Link>
             ))}
           </div>
 
-          <div className="mt-8">
+          <div className="mt-10">
             <ReportButton />
           </div>
         </div>

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Personal notes — sirf local, GitHub pe nahi jayega
+team/GARVIT_MERA_KAAM.md
+Understand_your_project.md

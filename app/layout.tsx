@@ -2,25 +2,25 @@
 // SessionProvider sabko wrap karta hai, taaki har page chuna hua college aur user jaan sake.
 
 import type { Metadata } from "next";
-import { Caveat, Courier_Prime, DM_Serif_Display } from "next/font/google";
+import { Familjen_Grotesk, Shrikhand } from "next/font/google";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { SessionProvider } from "@/lib/session";
 import "./globals.css";
 
-// Teen fonts: typewriter (normal text), serif (headings), handwriting (photo captions)
-const courier = Courier_Prime({ variable: "--font-courier", subsets: ["latin"], weight: ["400", "700"] });
-const dmSerif = DM_Serif_Display({ variable: "--font-dm-serif", subsets: ["latin"], weight: "400" });
-const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"] });
+// Shrikhand: Gujarati lettering se inspired retro display font (headings)
+// Familjen Grotesk: thoda quirky sans-serif (baaki sab text)
+const shrikhand = Shrikhand({ variable: "--font-shrikhand", subsets: ["latin"], weight: "400" });
+const familjen = Familjen_Grotesk({ variable: "--font-familjen", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CampusLens",
-  description: "A shared archive of college memories.",
+  description: "The photo wall for your whole campus.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${courier.variable} ${dmSerif.variable} ${caveat.variable} antialiased`}>
+    <html lang="en" className={`${shrikhand.variable} ${familjen.variable} antialiased`}>
       <body className="flex min-h-screen flex-col font-sans">
         <SessionProvider>
           <Navbar />

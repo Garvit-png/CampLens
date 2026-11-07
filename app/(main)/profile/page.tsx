@@ -1,10 +1,11 @@
-// Profile ("/profile"). Student ID card + apni upload ki hui photos.
+// Profile ("/profile"). Press pass + apni upload ki hui photos.
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import EmptyState from "@/components/EmptyState";
 import PhotoCard from "@/components/PhotoCard";
+import PressPass from "@/components/PressPass";
 import { getCollege, sortNewestFirst } from "@/lib/helpers";
 import { useSession } from "@/lib/session";
 
@@ -18,6 +19,7 @@ export default function ProfilePage() {
 
   // Sirf is user ki photos (abhi naam se match; baad mein user id se)
   const myPhotos = sortNewestFirst(collegePhotos.filter((p) => p.uploaderName === user.fullName));
+  const firstName = user.fullName.split(" ")[0];
 
   function handleSignOut() {
     signOut();
@@ -25,42 +27,40 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-14">
-      <div className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
-        {/* ID card */}
-        <div className="w-full max-w-md -rotate-1 rounded-md border-2 border-ink bg-paper-light shadow-[6px_6px_0_var(--color-ink)]">
-          <div className="flex justify-between bg-teal px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-paper-light">
-            <span>{college.name}</span>
-            <span>Student ID</span>
-          </div>
-          <div className="flex gap-5 p-5">
-            <div className="grid h-28 w-24 shrink-0 place-items-center bg-ink/10 font-serif text-5xl text-ink/60">
-              {user.fullName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 space-y-1.5">
-              <p className="truncate font-serif text-3xl leading-tight">{user.fullName}</p>
-              <p className="text-sm">Class of {user.batchYear}</p>
-              <p className="truncate text-sm text-muted">{user.email}</p>
-            </div>
-          </div>
-        </div>
+    <div className="mx-auto max-w-6xl px-6 py-10 md:py-14">
+      <div className="grid items-center gap-12 md:grid-cols-[1fr_1.3fr]">
+        <PressPass
+          name={user.fullName}
+          collegeName={college.name}
+          batchYear={user.batchYear}
+          email={user.email}
+          uploads={myPhotos.length}
+          className="-rotate-2"
+        />
 
-        <div className="flex gap-3">
-          <Link href="/onboarding" className="btn-ghost">Edit</Link>
-          <button type="button" onClick={handleSignOut} className="btn-ghost">Sign out</button>
+        <div>
+          <h1 className="font-display text-5xl leading-[1.02] md:text-6xl">Hey {firstName}.</h1>
+          <p className="mt-4 max-w-md text-lg text-ink-soft">
+            {myPhotos.length === 0
+              ? "You haven't added any photos yet. Your camera roll is probably full of them."
+              : `You've added ${myPhotos.length} ${myPhotos.length === 1 ? "photo" : "photos"} to the ${college.name} wall.`}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/upload" className="btn">Upload photos</Link>
+            <Link href="/onboarding" className="btn-ghost">Edit pass</Link>
+            <button type="button" onClick={handleSignOut} className="btn-ghost">Sign out</button>
+          </div>
         </div>
       </div>
 
-      <h2 className="mt-16 border-y-2 border-ink py-4 font-serif text-3xl">
-        Your prints <span className="text-muted">· {myPhotos.length}</span>
-      </h2>
+      <h2 className="mt-20 border-b-2 border-ink pb-5 font-display text-4xl">Your photos</h2>
 
       {myPhotos.length === 0 ? (
-        <EmptyState title="Your roll is empty" message="Photos you upload will show up here.">
-          <Link href="/upload" className="btn">Upload a photo</Link>
+        <EmptyState title="Nothing here yet" message="Photos you upload will show up here, and on the campus wall.">
+          <Link href="/upload" className="btn">Upload your first photo</Link>
         </EmptyState>
       ) : (
-        <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-10 columns-2 gap-6 md:columns-3 lg:columns-4">
           {myPhotos.map((photo, index) => (
             <PhotoCard key={photo.id} photo={photo} index={index} />
           ))}

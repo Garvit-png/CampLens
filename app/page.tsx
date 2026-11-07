@@ -4,9 +4,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import CollegeStamp from "@/components/CollegeStamp";
-import Developing from "@/components/Developing";
-import Postmark from "@/components/Postmark";
+import FestTicket from "@/components/FestTicket";
+import { SearchIcon } from "@/components/Icons";
+import { Bunting, HeroScene, ScribbleArrow } from "@/components/Illustrations";
+import PageLoader from "@/components/PageLoader";
 import { colleges } from "@/lib/mockData";
 import { useSession } from "@/lib/session";
 
@@ -23,7 +24,7 @@ export default function SelectSchoolPage() {
   }, [isAlreadySignedIn, router]);
 
   if (!isReady || isAlreadySignedIn) {
-    return <Developing />;
+    return <PageLoader />;
   }
 
   // Naam ya city se college dhoondo
@@ -38,52 +39,64 @@ export default function SelectSchoolPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-      <section className="relative">
-        <p className="label">Step 1 of 3 · Choose your campus</p>
-        <h1 className="max-w-3xl font-serif text-5xl leading-[1.05] md:text-7xl">
-          Select your school.
-        </h1>
-        <p className="mt-5 max-w-lg text-muted">
-          Every campus keeps its own archive. Pick yours to see its fests, farewells and late
-          nights — in prints.
-        </p>
+    <>
+      <Bunting className="h-12 w-full md:h-16" />
 
-        <Postmark
-          label="CAMPUSLENS • ARCHIVE • EST 2026 •"
-          center="POST"
-          className="absolute -top-4 right-0 hidden w-36 rotate-12 text-rust/70 md:block"
-        />
+      <div className="mx-auto max-w-6xl px-6">
+        {/* ---------- Hero ---------- */}
+        <section className="grid items-center gap-6 pb-10 pt-6 md:grid-cols-[1.15fr_1fr] md:pb-16">
+          <div>
+            <h1 className="animate-register font-display text-[3.4rem] leading-[0.95] md:text-[5.6rem]">
+              The photo wall for your whole campus.
+            </h1>
+            <p className="mt-7 max-w-md text-lg text-ink-soft">
+              Damru night, farewell hugs, the 2 am dhol. Find every shot by hashtag, or add the ones on your phone.
+            </p>
+          </div>
+          <HeroScene className="mx-auto w-full max-w-md" />
+        </section>
 
-        <input
-          type="search"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search by college or city…"
-          aria-label="Search colleges"
-          className="field mt-10 max-w-md"
-        />
-      </section>
+        {/* ---------- College picker ---------- */}
+        <section id="campus" className="border-t-2 border-ink pt-10">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="relative">
+              <h2 className="font-display text-4xl">Pick your college</h2>
+              <p className="mt-2 text-ink-soft">Each campus has its own private wall. Only your college email gets in.</p>
+              <ScribbleArrow className="absolute -bottom-12 left-60 hidden w-20 rotate-12 md:block" />
+            </div>
 
-      {visibleColleges.length === 0 ? (
-        <p className="mt-16 text-muted">No college matches “{searchText}”.</p>
-      ) : (
-        <div className="mt-14 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {visibleColleges.map((college, index) => (
-            <button
-              key={college.id}
-              type="button"
-              onClick={() => handlePick(college.id)}
-              className={`text-left transition duration-300 hover:-translate-y-2 hover:rotate-0 ${
-                index % 2 === 0 ? "-rotate-2" : "rotate-2"
-              }`}
-              aria-label={`Select ${college.name}`}
-            >
-              <CollegeStamp college={college} index={index} />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+            <div className="relative w-full md:max-w-xs">
+              <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2" />
+              <input
+                type="search"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="College or city"
+                aria-label="Search colleges"
+                className="field pl-11"
+              />
+            </div>
+          </div>
+
+          {visibleColleges.length === 0 ? (
+            <p className="mt-12 text-lg text-ink-soft">No college matches “{searchText}”. Try the city name instead.</p>
+          ) : (
+            <div className="mt-14 grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2">
+              {visibleColleges.map((college, index) => (
+                <button
+                  key={college.id}
+                  type="button"
+                  onClick={() => handlePick(college.id)}
+                  className="group rounded-2xl text-left"
+                  aria-label={`Select ${college.name}`}
+                >
+                  <FestTicket college={college} index={index} />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </>
   );
 }

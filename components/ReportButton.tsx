@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { FlagIcon } from "@/components/Icons";
 
 export default function ReportButton() {
   const [isReported, setIsReported] = useState(false);
@@ -15,14 +16,15 @@ export default function ReportButton() {
 
   if (isReported) {
     return (
-      <p className="rubber-stamp -rotate-3 text-rust" role="status">
-        Reported · under review
+      <p className="inline-flex animate-pop items-center gap-2 rounded-lg bg-sun px-3 py-1.5 text-sm font-semibold" role="status">
+        Reported. A moderator will review it.
       </p>
     );
   }
 
   return (
-    <button type="button" onClick={handleReport} className="text-xs font-bold uppercase tracking-widest text-muted underline underline-offset-4 hover:text-rust">
+    <button type="button" onClick={handleReport} className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft underline decoration-2 underline-offset-4 transition hover:text-alarm">
+      <FlagIcon className="h-4 w-4" />
       Report this photo
     </button>
   );

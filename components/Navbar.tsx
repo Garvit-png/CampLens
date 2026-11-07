@@ -1,10 +1,11 @@
-// Upar wali bar. Login hone ke baad hi links dikhte hain.
+// Upar wali bar (sticky). Login hone ke baad hi links dikhte hain.
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { getCollege } from "@/lib/helpers";
+import { LensMark, Squiggle } from "@/components/Illustrations";
+import { getCollege, getInitials } from "@/lib/helpers";
 import { useSession } from "@/lib/session";
 
 const navLinks = [
@@ -29,41 +30,41 @@ export default function Navbar() {
   }
 
   return (
-    <header className="border-b-2 border-ink bg-paper/80 backdrop-blur">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-        <Link href={isSignedIn ? "/gallery" : "/"} className="flex items-center gap-2">
-          {/* Chhota camera lens jaisa logo */}
-          <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-ink">
-            <span className="h-3 w-3 rounded-full bg-rust" />
-          </span>
-          <span className="font-serif text-2xl">CampusLens</span>
+    <header className="sticky top-0 z-30 border-b-2 border-ink bg-paper/90 backdrop-blur">
+      <nav className="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between gap-4 px-6">
+        <Link href={isSignedIn ? "/gallery" : "/"} className="group flex items-center gap-2.5">
+          <LensMark className="h-9 w-9 transition-transform duration-300 group-hover:rotate-[20deg]" />
+          <span className="font-display text-2xl">CampusLens</span>
         </Link>
 
         {isSignedIn && (
           <>
-            <div className="hidden items-center gap-7 text-sm font-bold uppercase tracking-wider md:flex">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={currentPath.startsWith(link.href) ? "text-rust" : "hover:text-rust"}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div className="hidden items-center gap-7 md:flex">
+              {navLinks.map((link) => {
+                const isActive = currentPath.startsWith(link.href);
+                return (
+                  <Link key={link.href} href={link.href} className="relative py-1 font-semibold">
+                    {link.label}
+                    {isActive && <Squiggle className="absolute -bottom-1.5 left-0 h-2 w-full" />}
+                  </Link>
+                );
+              })}
               <button
                 type="button"
                 onClick={handleSwitchCampus}
-                className="rubber-stamp -rotate-2 text-teal hover:rotate-0"
+                className="flex items-center gap-2 rounded-full border-2 border-ink bg-white py-1 pl-1 pr-3.5 text-sm font-semibold transition hover:bg-sun"
                 title="Switch campus"
               >
-                {college?.name ?? "Campus"}
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-pink font-display text-xs text-white">
+                  {college ? getInitials(college.name) : "?"}
+                </span>
+                Switch campus
               </button>
             </div>
 
             <button
               type="button"
-              className="text-sm font-bold uppercase md:hidden"
+              className="rounded-full border-2 border-ink px-4 py-1 font-semibold md:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-expanded={isMenuOpen}
             >
@@ -74,13 +75,18 @@ export default function Navbar() {
       </nav>
 
       {isSignedIn && isMenuOpen && (
-        <div className="flex flex-col border-t-2 border-ink px-6 py-2 text-sm font-bold uppercase md:hidden">
+        <div className="flex flex-col border-t-2 border-ink px-6 py-3 font-display text-2xl md:hidden">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} onClick={() => setIsMenuOpen(false)} className="py-2.5">
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setIsMenuOpen(false)}
+              className={`py-2 ${currentPath.startsWith(link.href) ? "text-pink" : ""}`}
+            >
               {link.label}
             </Link>
           ))}
-          <button type="button" onClick={handleSwitchCampus} className="py-2.5 text-left text-teal">
+          <button type="button" onClick={handleSwitchCampus} className="py-2 text-left font-sans text-base font-semibold text-ink-soft">
             Switch campus
           </button>
         </div>
