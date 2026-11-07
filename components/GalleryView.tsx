@@ -1,6 +1,6 @@
 // Gallery ka asli kaam:
-//   - Upar bada search bar (hashtag dhoondo)
-//   - Neeche trending hashtags (stickers) — click karo to search ho jaata hai
+//   - Upar search bar (hashtag dhoondo)
+//   - Neeche popular hashtags (stamps) — click karo to search ho jaata hai
 //   - Search khaali → naye uploads dikhte hain
 //   - Search kiya → sirf us hashtag wali photos
 //   - Year / event filter aur "Load more"
@@ -8,10 +8,9 @@
 
 import { useState } from "react";
 import EmptyState from "@/components/EmptyState";
-import HashtagSticker from "@/components/HashtagSticker";
-import { XIcon } from "@/components/Icons";
 import PhotoCard from "@/components/PhotoCard";
-import Spinner from "@/components/Spinner";
+import Postmark from "@/components/Postmark";
+import TagStamp from "@/components/TagStamp";
 import { cleanHashtag, filterPhotos, getCollege, getEventsForCollege, getPopularTags, sortNewestFirst } from "@/lib/helpers";
 import { useSession } from "@/lib/session";
 
@@ -25,7 +24,6 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
   const [year, setYear] = useState("all");
   const [eventId, setEventId] = useState("all");
   const [visibleCount, setVisibleCount] = useState(PHOTOS_PER_PAGE);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Is college ke data se banaye gaye options
   const popularTags = getPopularTags(collegePhotos);
@@ -47,7 +45,7 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
     setVisibleCount(PHOTOS_PER_PAGE);
   }
 
-  // Sticker pe click: same tag dobara dabaya to search hata do
+  // Tag stamp pe click: same tag dobara dabaya to search hata do
   function handleTagClick(tag: string) {
     updateSearch(searchedTag.toLowerCase() === tag.toLowerCase() ? "" : tag);
   }
@@ -58,74 +56,67 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
     setEventId("all");
   }
 
-  // "Load more": thoda ruk ke (baad mein yahan API call hogi) aur photos dikhao
-  async function loadMore() {
-    setIsLoadingMore(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setVisibleCount((count) => count + PHOTOS_PER_PAGE);
-    setIsLoadingMore(false);
-  }
-
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12 md:py-16">
-      {/* ---------- Header + bada search ---------- */}
-      <section>
-        <p className="text-lg font-semibold text-ink-soft">
-          {college?.name}, {collegePhotos.length} photos so far
-        </p>
+    <div className="mx-auto max-w-6xl px-6 py-14">
+      {/* ---------- Header + search ---------- */}
+      <section className="relative">
+        <p className="label">The archive · {college?.city}</p>
+        <h1 className="max-w-3xl font-serif text-5xl leading-[1.05] md:text-6xl">{college?.name}</h1>
+
+        <Postmark
+          label={`${college?.city.toUpperCase()} • CAMPUSLENS • ARCHIVE •`}
+          center={`'${String(new Date().getFullYear()).slice(2)}`}
+          className="absolute -top-2 right-0 hidden w-32 -rotate-12 text-teal/60 md:block"
+        />
 
         {/* Search bar — har key press pe results update (live search) */}
-        <form onSubmit={(e) => e.preventDefault()} role="search" className="relative mt-4">
-          <label htmlFor="tag-search" className="sr-only">Search by hashtag</label>
-          <div className="flex max-w-2xl items-center rounded-2xl border-2 border-ink bg-white pl-4 pr-2 shadow-[4px_4px_0_var(--color-pink)] transition-shadow focus-within:shadow-[5px_5px_0_var(--color-sun)]">
-            <span className="font-display text-2xl text-pink md:text-3xl" aria-hidden="true">#</span>
+        <form onSubmit={(e) => e.preventDefault()} className="mt-8 flex max-w-2xl gap-3">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-serif text-2xl text-rust">#</span>
             <input
-              id="tag-search"
-              type="text"
+              type="search"
               value={search}
               onChange={(e) => updateSearch(e.target.value)}
-              placeholder="Damru26"
-              autoComplete="off"
-              className="h-14 w-full min-w-0 bg-transparent px-2 font-display text-xl outline-none placeholder:text-ink/25 md:h-16 md:text-2xl"
+              placeholder="Search a hashtag — try Damru26"
+              aria-label="Search by hashtag"
+              className="field py-3.5 pl-10 text-base"
             />
-            {search && (
-              <button
-                type="button"
-                onClick={() => updateSearch("")}
-                aria-label="Clear search"
-                className="grid h-9 w-9 shrink-0 animate-pop place-items-center rounded-full border-2 border-ink bg-sun transition hover:rotate-90"
-              >
-                <XIcon className="h-4 w-4" />
-              </button>
-            )}
           </div>
+          <button type="submit" className="btn">Search</button>
         </form>
 
-        {/* Trending hashtags */}
+        {/* Popular hashtags */}
         {popularTags.length > 0 && (
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <span className="mr-1 font-semibold text-ink-soft">Trending</span>
-            {popularTags.map((item, index) => (
-              <HashtagSticker
-                key={item.tag}
-                tag={item.tag}
-                count={item.count}
-                index={index}
-                isActive={searchedTag.toLowerCase() === item.tag.toLowerCase()}
-                onClick={() => handleTagClick(item.tag)}
-              />
-            ))}
+          <div className="mt-7">
+            <p className="label">Popular stamps on campus</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {popularTags.map((item, index) => (
+                <TagStamp
+                  key={item.tag}
+                  tag={item.tag}
+                  count={item.count}
+                  index={index}
+                  isActive={searchedTag.toLowerCase() === item.tag.toLowerCase()}
+                  onClick={() => handleTagClick(item.tag)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </section>
 
       {/* ---------- Section title + filters ---------- */}
-      <section className="mt-16 flex flex-col justify-between gap-4 border-b-2 border-ink pb-5 md:flex-row md:items-end">
-        <h1 className="font-display text-4xl leading-tight">
-          {isSearching
-            ? `${matchingPhotos.length} ${matchingPhotos.length === 1 ? "photo" : "photos"} tagged #${searchedTag}`
-            : "Fresh off the press"}
-        </h1>
+      <section className="mt-14 flex flex-col justify-between gap-4 border-y-2 border-ink py-4 md:flex-row md:items-center">
+        <h2 className="font-serif text-3xl">
+          {isSearching ? (
+            <>
+              {matchingPhotos.length} {matchingPhotos.length === 1 ? "print" : "prints"} stamped{" "}
+              <span className="text-rust">#{searchedTag}</span>
+            </>
+          ) : (
+            "Fresh from the darkroom"
+          )}
+        </h2>
 
         <div className="flex w-full gap-3 md:w-auto">
           <select
@@ -136,9 +127,9 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
               setVisibleCount(PHOTOS_PER_PAGE);
             }}
             aria-label="Filter by year"
-            className="field h-11 min-w-0 flex-1 rounded-full md:w-auto md:flex-none"
+            className="field min-w-0 flex-1 py-2 md:w-auto md:flex-none"
           >
-            <option value="all">Every year</option>
+            <option value="all">All years</option>
             {years.map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
@@ -150,9 +141,9 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
               setVisibleCount(PHOTOS_PER_PAGE);
             }}
             aria-label="Filter by event"
-            className="field h-11 min-w-0 flex-1 rounded-full md:w-auto md:flex-none"
+            className="field min-w-0 flex-1 py-2 md:w-auto md:flex-none"
           >
-            <option value="all">Every event</option>
+            <option value="all">All events</option>
             {eventOptions.map((e) => (
               <option key={e.id} value={e.id}>{e.name}</option>
             ))}
@@ -160,16 +151,16 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
         </div>
       </section>
 
-      {/* ---------- Photos (masonry) ---------- */}
+      {/* ---------- Photos ---------- */}
       {matchingPhotos.length === 0 ? (
         <EmptyState
-          title={isSearching ? `Nobody's tagged #${searchedTag} yet` : "This wall is empty"}
-          message="Check the spelling, try a different year or event, or upload the first photo yourself."
+          title={isSearching ? `No prints for #${searchedTag}` : "No photos here yet"}
+          message="Try another stamp, change the filters — or be the first to upload one."
         >
-          <button type="button" onClick={clearAll} className="btn-ghost">Clear search and filters</button>
+          <button type="button" onClick={clearAll} className="btn-ghost">Clear search</button>
         </EmptyState>
       ) : (
-        <div className="mt-10 columns-2 gap-6 md:columns-3 lg:columns-4">
+        <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
           {photosToShow.map((photo, index) => (
             <PhotoCard key={photo.id} photo={photo} index={index} />
           ))}
@@ -177,15 +168,9 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
       )}
 
       {matchingPhotos.length > visibleCount && (
-        <div className="mt-10 text-center">
-          <button type="button" onClick={loadMore} disabled={isLoadingMore} className="btn-ghost min-w-44">
-            {isLoadingMore ? (
-              <>
-                <Spinner /> Loading
-              </>
-            ) : (
-              "Show more photos"
-            )}
+        <div className="mt-16 text-center">
+          <button type="button" onClick={() => setVisibleCount(visibleCount + PHOTOS_PER_PAGE)} className="btn-ghost">
+            Load more prints
           </button>
         </div>
       )}

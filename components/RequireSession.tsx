@@ -8,7 +8,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import PageLoader from "@/components/PageLoader";
+import Developing from "@/components/Developing";
 import { useSession } from "@/lib/session";
 
 export default function RequireSession({ children }: { children: React.ReactNode }) {
@@ -28,7 +28,7 @@ export default function RequireSession({ children }: { children: React.ReactNode
   }, [redirectTo, router]);
 
   if (!isReady || redirectTo) {
-    return <PageLoader />;
+    return <Developing />;
   }
   return children;
 }

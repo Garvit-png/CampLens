@@ -1,12 +1,10 @@
 // Onboarding ("/onboarding"). Login ke baad naam aur batch bharo.
-// Side mein press pass live update hota hai — jo likhoge woh card pe dikhega.
+// Side mein student ID card live update hota hai — jo likhoge woh card pe dikhega.
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import PageLoader from "@/components/PageLoader";
-import PressPass from "@/components/PressPass";
-import Spinner from "@/components/Spinner";
+import Developing from "@/components/Developing";
 import { getCollege } from "@/lib/helpers";
 import { useSession } from "@/lib/session";
 import type { SessionUser } from "@/types";
@@ -29,7 +27,7 @@ export default function OnboardingPage() {
   }, [isReady, college, user, router]);
 
   if (!college || !user) {
-    return <PageLoader />;
+    return <Developing />;
   }
 
   // Form alag component mein hai, taaki woh tabhi bane jab user data aa chuka ho
@@ -44,56 +42,70 @@ function OnboardingForm({ collegeName, user }: { collegeName: string; user: Sess
   const [fullName, setFullName] = useState(user.fullName);
   const [batchYear, setBatchYear] = useState(user.batchYear ? String(user.batchYear) : "");
   const [errorMessage, setErrorMessage] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (fullName.trim().length < 2) return setErrorMessage("Add your full name so friends can find you.");
-    if (!batchYear) return setErrorMessage("Pick the year you graduate.");
+    if (fullName.trim().length < 2) return setErrorMessage("Please enter your full name.");
+    if (!batchYear) return setErrorMessage("Please pick your batch.");
 
-    setIsSaving(true);
     saveProfile(fullName.trim(), Number(batchYear));
     router.push("/gallery");
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl items-start gap-14 px-6 py-14 md:grid-cols-[1.1fr_1fr] md:py-20">
-      <div className="md:pt-16">
-        <h1 className="font-display text-5xl leading-[1.02] md:text-6xl">Get your press pass.</h1>
-        <p className="mt-5 text-lg text-ink-soft">Your name shows up on every photo you add.</p>
+    <div className="mx-auto grid max-w-5xl items-center gap-14 px-6 py-16 md:grid-cols-2 md:py-24">
+      <div>
+        <p className="label">Step 3 of 3 · Your ID card</p>
+        <h1 className="font-serif text-5xl">Who&apos;s in the photo?</h1>
 
-        <form onSubmit={handleSubmit} noValidate className="mt-9 space-y-5">
+        <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
           <div>
             <label htmlFor="fullName" className="label">Full name</label>
-            <input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Aarav Sharma" className="field" />
+            <input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="field" />
           </div>
 
           <div>
-            <label htmlFor="batch" className="label">Graduating batch</label>
+            <label htmlFor="batch" className="label">Batch</label>
             <select id="batch" value={batchYear} onChange={(e) => setBatchYear(e.target.value)} className="field">
-              <option value="">Choose a year</option>
+              <option value="">Select</option>
               {batchYears.map((year) => (
                 <option key={year} value={year}>Class of {year}</option>
               ))}
             </select>
           </div>
 
-          {errorMessage && <p className="font-semibold text-alarm" role="alert">{errorMessage}</p>}
+          {errorMessage && <p className="text-xs font-bold text-rust" role="alert">{errorMessage}</p>}
 
-          <button type="submit" disabled={isSaving} className="btn w-full">
-            {isSaving ? (
-              <>
-                <Spinner /> Printing your pass
-              </>
-            ) : (
-              "Open the photo wall"
-            )}
-          </button>
+          <button type="submit" className="btn w-full">Open the archive</button>
         </form>
       </div>
 
-      {/* Live preview */}
-      <PressPass name={fullName} collegeName={collegeName} batchYear={batchYear} email={user.email} className="rotate-2" />
+      {/* Live ID card preview */}
+      <div className="rotate-2 rounded-md border-2 border-ink bg-paper-light shadow-[6px_6px_0_var(--color-ink)]">
+        <div className="flex items-center justify-between rounded-t-sm bg-teal px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-paper-light">
+          <span>{collegeName}</span>
+          <span>Student ID</span>
+        </div>
+        <div className="flex gap-5 p-5">
+          <div className="grid h-28 w-24 shrink-0 place-items-center bg-ink/10 font-serif text-5xl text-ink/60">
+            {fullName.trim().charAt(0).toUpperCase() || "?"}
+          </div>
+          <dl className="min-w-0 space-y-2 text-sm">
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted">Name</dt>
+              <dd className="truncate font-hand text-2xl leading-none">{fullName || "Your name"}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted">Batch</dt>
+              <dd>{batchYear ? `Class of ${batchYear}` : "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-widest text-muted">Email</dt>
+              <dd className="truncate">{user.email}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
     </div>
   );
 }
