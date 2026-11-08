@@ -11,10 +11,8 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const router = useRouter();
   const [collegeId, setCollegeId] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("selected_college_id");
@@ -23,60 +21,59 @@ export default function LoginPage() {
     } else {
       setCollegeId(saved);
     }
+    // URL mein error hai?
     const params = new URLSearchParams(window.location.search);
     const urlError = params.get("error");
     if (urlError) {
-      setErrorMessage("Link expired. Please request a new magic link.");
+      setErrorMessage("Sign in failed. Please try again.");
     }
   }, [router]);
 
   const college = getCollege(collegeId ?? "");
   if (!collegeId || !college) return <Developing />;
 
-  const domain = college.emailDomains[0];
+  const collegeIndex = colleges.findIndex((c) => c.id === college.id);
 
-  function validateEmail(value: string): string {
-    if (value.trim() === "") return "Please enter your email.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-      return "That doesn't look like a valid email.";
-    const emailDomain = value.split("@")[1].toLowerCase();
-    if (!college!.emailDomains.includes(emailDomain))
-      return `Use your @${domain} email.`;
-    return "";
-  }
+  async function handleGoogleLogin() {
+    setIsLoading(true);
+    setErrorMessage("");
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const error = validateEmail(email);
-    setErrorMessage(error);
-    if (error) return;
-
-    setIsSending(true);
     try {
       const supabase = createClient();
 
-      // OTP email bhejo — user 8-digit code type karega
-      // Yeh PKCE problem se free hai
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        // Google OAuth use karo
+        // Koi PKCE/OTP issue nahi — seedha Google pe jao → callback pe wapas aao
+
         options: {
-          shouldCreateUser: true,
-          data: {
-            college_id: collegeId, // extra data pass karo
-          }
+          redirectTo: `${window.location.origin}/auth/callback`,
+          // Login ke baad /auth/callback pe redirect hoga
+          // wahan session set hoga → /onboarding pe jaayenge
+
+          queryParams: {
+            // Google se specifically college email maango
+            hd: college!.emailDomains[0].split(".").slice(-2).join("."),
+            // hd = "hosted domain" — Google Workspace accounts filter
+            // "nst.rishihood.edu.in" → "edu.in" → sirf edu.in accounts
+            // Note: yeh sirf suggestion hai, enforce nahi karta
+            // Server-side domain check onboarding mein karenge
+            prompt: "select_account",
+            // Har baar account select karne ka option dikhao
+          },
         },
       });
 
-      if (authError) {
-        setErrorMessage(`Error: ${authError.message}`);
-        return;
+      if (error) {
+        setErrorMessage(`Error: ${error.message}`);
+        setIsLoading(false);
       }
-      setEmailSent(true);
+      // Error nahi → Google page pe redirect ho jayega (browser navigate karega)
+
     } catch (err) {
       console.error(err);
-      setErrorMessage("Network error. Check your connection.");
-    } finally {
-      setIsSending(false);
+      setErrorMessage("Something went wrong. Try again.");
+      setIsLoading(false);
     }
   }
 
@@ -85,50 +82,51 @@ export default function LoginPage() {
     router.push("/");
   }
 
-  const collegeIndex = colleges.findIndex((c) => c.id === college.id);
-
-  // OTP entry screen
-  if (emailSent) {
-    return (
-      <OtpScreen
-        email={email}
-        onBack={() => setEmailSent(false)}
-        onSuccess={() => router.replace("/onboarding")}
-      />
-    );
-  }
-
   return (
     <div className="mx-auto grid max-w-5xl items-center gap-14 px-6 py-16 md:grid-cols-[1fr_1.2fr] md:py-24">
+
+      {/* Left: College Stamp */}
       <div className="mx-auto w-60 -rotate-3">
         <CollegeStamp college={college} index={collegeIndex} />
       </div>
+
+      {/* Right: Login */}
       <div>
         <p className="label">Step 2 of 3 · Sign in</p>
-        <h1 className="font-serif text-5xl leading-tight">Welcome back to {college.name}.</h1>
+        <h1 className="font-serif text-5xl leading-tight">
+          Welcome to {college.name}.
+        </h1>
         <p className="mt-4 text-sm text-muted">
-          Use your college email — we&apos;ll send you a one-time code.
+          Sign in with your college Google account to access the archive.
         </p>
-        <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
-          <div>
-            <label htmlFor="email" className="label">College email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={`yourname@${domain}`}
-              className="field"
-              aria-invalid={errorMessage !== ""}
-            />
-            {errorMessage && (
-              <p className="mt-2 text-xs font-bold text-rust" role="alert">{errorMessage}</p>
-            )}
-          </div>
-          <button type="submit" disabled={isSending} className="btn w-full">
-            {isSending ? "Sending…" : "Send code"}
-          </button>
-        </form>
+
+        {errorMessage && (
+          <p className="mt-4 text-xs font-bold text-rust" role="alert">
+            {errorMessage}
+          </p>
+        )}
+
+        {/* Google Sign In Button */}
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="mt-8 flex w-full items-center justify-center gap-3 rounded-md border-2 border-ink bg-white px-6 py-4 font-bold transition hover:bg-paper-light disabled:opacity-50"
+        >
+          {/* Google Logo SVG */}
+          <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+            <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z" />
+            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+          </svg>
+          {isLoading ? "Redirecting to Google…" : "Sign in with Google"}
+        </button>
+
+        <p className="mt-4 text-xs text-muted text-center">
+          Use your <strong>{college.emailDomains[0]}</strong> Google account
+        </p>
+
         <button
           type="button"
           onClick={handleChangeSchool}
@@ -137,103 +135,6 @@ export default function LoginPage() {
           Not your school? Change it
         </button>
       </div>
-    </div>
-  );
-}
-
-
-// OTP verification component
-function OtpScreen({
-  email,
-  onBack,
-  onSuccess,
-}: {
-  email: string;
-  onBack: () => void;
-  onSuccess: () => void;
-}) {
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-
-  async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (otp.trim().length < 6) {
-      setError("Please enter the 8-digit code.");
-      return;
-    }
-
-    setIsVerifying(true);
-    setError("");
-
-    try {
-      const supabase = createClient();
-
-      // OTP verify karo — PKCE nahi, direct verify
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otp.trim(),
-        type: "email",
-        // type: "email" = email OTP verify karo
-      });
-
-      if (verifyError) {
-        setError(`Invalid code: ${verifyError.message}`);
-        return;
-      }
-
-      // Success — onboarding pe jao
-      onSuccess();
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong. Try again.");
-    } finally {
-      setIsVerifying(false);
-    }
-  }
-
-  return (
-    <div className="mx-auto max-w-md px-6 py-24">
-      <p className="label">Step 2 of 3 · Verify</p>
-      <h1 className="font-serif text-4xl">Enter your code.</h1>
-      <p className="mt-3 text-sm text-muted">
-        We sent a 8-digit code to <strong>{email}</strong>.
-        <br />Check your inbox (and spam folder).
-      </p>
-
-      <form onSubmit={handleVerify} noValidate className="mt-8 space-y-5">
-        <div>
-          <label htmlFor="otp" className="label">8-digit code</label>
-          <input
-            id="otp"
-            type="text"
-            inputMode="numeric"
-            // inputMode="numeric" → mobile pe number keyboard khulega
-            maxLength={8}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            // /\D/g = non-digits remove karo (sirf numbers allow)
-            placeholder="12345678"
-            className="field text-2xl tracking-widest"
-            autoFocus
-          />
-          {error && (
-            <p className="mt-2 text-xs font-bold text-rust" role="alert">{error}</p>
-          )}
-        </div>
-
-        <button type="submit" disabled={isVerifying} className="btn w-full">
-          {isVerifying ? "Verifying…" : "Verify"}
-        </button>
-      </form>
-
-      <button
-        type="button"
-        onClick={onBack}
-        className="mt-4 text-sm text-muted underline underline-offset-4 hover:text-ink"
-      >
-        Use a different email
-      </button>
     </div>
   );
 }
