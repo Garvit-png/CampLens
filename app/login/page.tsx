@@ -99,8 +99,9 @@ export default function LoginPage() {
       })
 
       if (authError) {
-        setErrorMessage("Something went wrong. Please try again.")
-        console.error("Auth error:", authError.message)
+        // Exact error message dikhao debugging ke liye
+        setErrorMessage(`Error: ${authError.message}`)
+        console.error("Auth error:", authError.message, authError)
         return
       }
 
