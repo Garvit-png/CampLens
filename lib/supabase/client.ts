@@ -6,8 +6,11 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        flowType: 'pkce',
+        flowType: 'implicit',
+        // Implicit flow use karo — PKCE Vercel pe kaam nahi karta
+        // Implicit mein token URL hash mein aata hai, code verifier nahi chahiye
         detectSessionInUrl: true,
+        // Hash se automatically session detect karo
       },
     }
   )
