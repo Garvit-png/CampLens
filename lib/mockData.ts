@@ -29,7 +29,7 @@ export const colleges: College[] = [
     id: "rishihood",               // unique ID — URL aur matching mein use hoga
     name: "Rishihood University",  // display naam
     city: "Sonipat",               // filter/gallery header mein use hoga
-    emailDomains: ["rishihood.edu.in"], // sirf yeh domain allowed login mein
+    emailDomains: ["rishihood.edu.in", "nst.rishihood.edu.in"], // sirf yeh domain allowed login mein
   },
   {
     id: "northfield",

@@ -422,6 +422,10 @@ SELECT id, 'rishihood.edu.in'
   FROM colleges WHERE short_name = 'RU';
 
 INSERT INTO college_email_domains (college_id, domain)
+SELECT id, 'nst.rishihood.edu.in'
+  FROM colleges WHERE short_name = 'RU';
+
+INSERT INTO college_email_domains (college_id, domain)
 SELECT id, 'dtu.ac.in'
   FROM colleges WHERE short_name = 'DTU';
 
