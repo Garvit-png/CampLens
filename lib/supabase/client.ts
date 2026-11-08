@@ -7,12 +7,11 @@ export function createClient() {
     {
       auth: {
         flowType: 'pkce',
-        // PKCE flow use karo — Supabase ?code= bhej raha hai
-        // code_verifier browser storage mein save hota hai login ke time
-        // confirm page pe exchangeCodeForSession() se verify hota hai
         detectSessionInUrl: true,
         persistSession: true,
-        // Session localStorage mein save karo (refresh ke baad bhi rahe)
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // Explicitly localStorage use karo — cookies nahi
+        // Vercel pe server/client cookie mismatch avoid karo
       }
     }
   )

@@ -24,7 +24,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<Photo[]>([]);
 
-  // useRef se supabase client stable reference — recreate nahi hogi
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
@@ -34,7 +33,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       .select("*, colleges(name, id)")
       .eq("user_id", userId)
       .maybeSingle();
-
     if (error) console.error("Profile load error:", error.message);
     setProfile(data ?? null);
   }
@@ -42,23 +40,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Step 1: Pehle getSession() se current session check karo
-    // Yeh cookie se existing session padhta hai
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await loadProfile(session.user.id);
-      }
-      setIsReady(true);
-    });
-
-    // Step 2: Future changes ke liye listener
+    // onAuthStateChange se start karo — yeh INITIAL_SESSION bhi fire karta hai
+    // localStorage mein session hai → INITIAL_SESSION with session
+    // Koi session nahi → INITIAL_SESSION with null
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-        console.log("Auth event:", event, session?.user?.email);
+        console.log("Auth event:", event, session?.user?.email ?? 'no user');
 
         if (session?.user) {
           setSupabaseUser(session.user);
@@ -67,7 +55,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setSupabaseUser(null);
           setProfile(null);
         }
-        setIsReady(true);
+
+        // INITIAL_SESSION ke baad ready karo
+        if (event === 'INITIAL_SESSION') {
+          setIsReady(true);
+        }
       }
     );
 
@@ -92,7 +84,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   const collegeId = profile?.college_id ?? null;
-
   const collegePhotos = [...uploadedPhotos, ...samplePhotos].filter(
     (photo) => photo.collegeId === collegeId
   );
