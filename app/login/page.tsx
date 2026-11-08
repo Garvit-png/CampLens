@@ -60,8 +60,7 @@ export default function LoginPage() {
       const { error: authError, data } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
-          // /auth/confirm pe seedha bhejo — wahan client-side session set hoga
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       console.log('signInWithOtp result:', { error: authError, data });
