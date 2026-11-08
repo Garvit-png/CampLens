@@ -45,21 +45,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // App load pe: Supabase session check karo
   // ----------------------------------------------------------
   useEffect(() => {
-    async function init() {
-      // Current session lo
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await loadProfile(session.user.id);
-      }
-
-      setIsReady(true);
-    }
-
-    init();
-
-    // Auth state change listen karo (login/logout)
+    // Auth state change listen karo (login/logout) — YEH HI SESSION DETECT KAREGA
+    // onAuthStateChange fires immediately with INITIAL_SESSION event
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
@@ -69,6 +56,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setSupabaseUser(null);
           setProfile(null);
         }
+        // isReady sirf yahan set karo — INITIAL_SESSION ke baad
         setIsReady(true);
       }
     );
