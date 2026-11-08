@@ -23,6 +23,12 @@ export default function LoginPage() {
     } else {
       setCollegeId(saved);
     }
+    // URL mein error hai? (jaise expired link)
+    const params = new URLSearchParams(window.location.search);
+    const urlError = params.get("error");
+    if (urlError) {
+      setErrorMessage(`Link expired or invalid. Please request a new one.`);
+    }
   }, [router]);
 
   const college = getCollege(collegeId ?? "");
