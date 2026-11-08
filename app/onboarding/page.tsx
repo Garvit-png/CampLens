@@ -40,6 +40,9 @@ export default function OnboardingPage() {
     async function loadUserData() {
       const supabase = createClient()
 
+      // Thoda wait karo — session cookie set hone mein time lagta hai
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // Supabase se current logged-in user lo
       const { data: { user }, error } = await supabase.auth.getUser()
 
