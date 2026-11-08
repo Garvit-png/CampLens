@@ -7,10 +7,16 @@ export function createClient() {
     {
       auth: {
         flowType: 'implicit',
-        // Google OAuth ke liye implicit flow use karo
-        // PKCE mein code_verifier cookie chahiye — cross-origin issue hota hai
-        // Implicit mein seedha token milta hai — koi verifier nahi
         detectSessionInUrl: true,
+        persistSession: true,
+        // persistSession: true → session localStorage mein save hoti hai
+        // Browser band karo, dobara kholo → session wahi rehti hai
+        // Sirf explicit logout ya token expire hone pe jaati hai
+        autoRefreshToken: true,
+        // autoRefreshToken: true → session automatically refresh hoti rehti hai
+        // Access token 1 hour mein expire hota hai
+        // Refresh token use karke silently naya token leta hai
+        // User ko pata bhi nahi chalta — seamless experience
       }
     }
   )
