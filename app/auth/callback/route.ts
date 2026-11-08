@@ -23,15 +23,11 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            // Request cookies + cookieStore dono se padho
-            const reqCookies = request.cookies.getAll()
-            const storeCookies = cookieStore.getAll()
-            // Merge karo — request wale priority pe
-            const merged = new Map(storeCookies.map(c => [c.name, c]))
-            reqCookies.forEach(c => merged.set(c.name, c))
-            return Array.from(merged.values())
+            // cookieStore se padho — yahan PKCE verifier hogi
+            return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
+            // Session cookies response pe set karo
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, {
                 ...options,
