@@ -23,7 +23,7 @@ interface Event {
 }
 
 export default function UploadPage() {
-  const { collegeId } = useSession();
+  const { collegeId, reloadPhotos } = useSession();
   const supabase = createClient();
 
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
@@ -190,6 +190,7 @@ export default function UploadPage() {
       }
 
       if (successCount > 0) {
+        await reloadPhotos(); // Gallery refresh karo
         setUploadedCount(successCount);
         setFirstTag(hashtags[0] ?? "");
       } else {

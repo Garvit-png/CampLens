@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { photos as samplePhotos } from "@/lib/mockData";
 import type { Photo } from "@/types";
 
 interface SessionValue {
@@ -14,6 +13,7 @@ interface SessionValue {
   addPhotos: (newPhotos: Photo[]) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  reloadPhotos: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -22,10 +22,52 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const [supabaseUser, setSupabaseUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
-  const [uploadedPhotos, setUploadedPhotos] = useState<Photo[]>([]);
+  const [collegePhotos, setCollegePhotos] = useState<Photo[]>([]);
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+
+  // Supabase se real photos load karo
+  async function loadPhotos(collegeId: string) {
+    const { data, error } = await supabase
+      .from("photos")
+      .select(`
+        id,
+        image_url,
+        thumbnail_url,
+        caption,
+        hashtags,
+        year,
+        uploaded_at,
+        event_id,
+        college_id,
+        profiles ( full_name )
+      `)
+      .eq("college_id", collegeId)
+      .eq("is_approved", true)
+      .order("uploaded_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("Photos load error:", error.message);
+      return;
+    }
+
+    // Supabase snake_case → TypeScript camelCase convert karo
+    const photos: Photo[] = (data ?? []).map((p: any) => ({
+      id: p.id,
+      collegeId: p.college_id,
+      imageUrl: p.image_url,
+      caption: p.caption ?? "",
+      hashtags: p.hashtags ?? [],
+      eventId: p.event_id ?? "",
+      year: p.year ?? new Date().getFullYear(),
+      uploaderName: p.profiles?.full_name ?? "Unknown",
+      uploadedAt: p.uploaded_at?.slice(0, 10) ?? "",
+    }));
+
+    setCollegePhotos(photos);
+  }
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
@@ -35,17 +77,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
     if (error) console.error("Profile load error:", error.message);
     setProfile(data ?? null);
+
+    // Profile milte hi photos load karo
+    if (data?.college_id) {
+      await loadPhotos(data.college_id);
+    }
   }
 
   useEffect(() => {
     let mounted = true;
 
-    // onAuthStateChange handles INITIAL_SESSION automatically
-    // createBrowserClient cookies se session restore karta hai
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-        console.log("Auth event:", event, session?.user?.email ?? 'no user');
 
         if (session?.user) {
           setSupabaseUser(session.user);
@@ -53,9 +97,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         } else {
           setSupabaseUser(null);
           setProfile(null);
+          setCollegePhotos([]);
         }
 
-        if (event === 'INITIAL_SESSION') {
+        if (event === "INITIAL_SESSION") {
           setIsReady(true);
         }
       }
@@ -71,25 +116,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (supabaseUser) await loadProfile(supabaseUser.id);
   }
 
+  // Upload ke baad photos reload karo
+  async function reloadPhotos() {
+    if (profile?.college_id) await loadPhotos(profile.college_id);
+  }
+
+  // addPhotos: Optimistic update — DB pe bhi save hota hai via API
+  function addPhotos(newPhotos: Photo[]) {
+    setCollegePhotos(prev => [...newPhotos, ...prev]);
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     setSupabaseUser(null);
     setProfile(null);
-  }
-
-  function addPhotos(newPhotos: Photo[]) {
-    setUploadedPhotos(prev => [...newPhotos, ...prev]);
+    setCollegePhotos([]);
   }
 
   const collegeId = profile?.college_id ?? null;
-  const collegePhotos = [...uploadedPhotos, ...samplePhotos].filter(
-    (photo) => photo.collegeId === collegeId
-  );
 
   return (
     <SessionContext.Provider value={{
       isReady, supabaseUser, profile, collegeId,
-      collegePhotos, addPhotos, signOut, refreshProfile,
+      collegePhotos, addPhotos, signOut, refreshProfile, reloadPhotos,
     }}>
       {children}
     </SessionContext.Provider>
