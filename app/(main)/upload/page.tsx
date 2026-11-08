@@ -63,7 +63,8 @@ interface SelectedPhoto {
 
 
 export default function UploadPage() {
-  const { collegeId, user, addPhotos } = useSession();
+  const { collegeId, supabaseUser, addPhotos } = useSession();
+  const user = { fullName: supabaseUser?.email?.split("@")[0] ?? "User" };
   // collegeId → kis college ki photo hai
   // user      → kisne upload kiya (naam ke liye)
   // addPhotos → session mein naye photos add karne ka function
