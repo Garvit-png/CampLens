@@ -26,8 +26,9 @@ export default function LoginPage() {
     // URL mein error hai? (jaise expired link)
     const params = new URLSearchParams(window.location.search);
     const urlError = params.get("error");
+    const errorCode = params.get("error_code");
     if (urlError) {
-      setErrorMessage(`Link expired or invalid. Please request a new one.`);
+      setErrorMessage(`${urlError}${errorCode ? ` (${errorCode})` : ''}. Please request a new one.`);
     }
   }, [router]);
 

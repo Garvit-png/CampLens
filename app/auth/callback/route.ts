@@ -10,9 +10,10 @@ export async function GET(request: NextRequest) {
   // Error aaya URL mein (jaise expired link)
   if (errorParam) {
     const errorDesc = requestUrl.searchParams.get('error_description') ?? 'Login failed'
-    console.error('Auth error from Supabase:', errorParam, errorDesc)
+    console.error('Auth error from Supabase:', { error: errorParam, error_description: errorDesc, url: request.url })
+    // Redirect with BOTH error code and description for debugging
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(errorDesc)}`
+      `${origin}/login?error_code=${encodeURIComponent(errorParam)}&error=${encodeURIComponent(errorDesc)}`
     )
   }
 
