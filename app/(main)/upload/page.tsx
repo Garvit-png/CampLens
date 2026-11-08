@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ALLOWED_IMAGE_TYPES,
   MAX_FILES_PER_UPLOAD,
   MAX_FILE_SIZE_MB,
-  getEventsForCollege,
   parseHashtags,
 } from "@/lib/helpers";
+import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session";
 
 interface SelectedPhoto {
@@ -16,12 +16,21 @@ interface SelectedPhoto {
   previewUrl: string;
 }
 
+interface Event {
+  id: string;
+  name: string;
+  year: number;
+}
+
 export default function UploadPage() {
   const { collegeId } = useSession();
-  const collegeEvents = getEventsForCollege(collegeId ?? "");
+  const supabase = createClient();
 
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [eventId, setEventId] = useState("");
+  const [showNewEvent, setShowNewEvent] = useState(false);
+  const [newEventName, setNewEventName] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtagText, setHashtagText] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -30,6 +39,46 @@ export default function UploadPage() {
   const [firstTag, setFirstTag] = useState("");
 
   const hashtags = parseHashtags(hashtagText);
+
+  // Supabase se real events load karo
+  useEffect(() => {
+    if (!collegeId) return;
+    supabase
+      .from("events")
+      .select("id, name, year")
+      .eq("college_id", collegeId)
+      .order("year", { ascending: false })
+      .then(({ data }) => {
+        if (data) setEvents(data);
+      });
+  }, [collegeId]);
+
+  // Naya event create karo
+  async function createEvent(): Promise<string | null> {
+    if (!newEventName.trim() || !collegeId) return null;
+
+    const { data, error } = await supabase
+      .from("events")
+      .insert({
+        college_id: collegeId,
+        name: newEventName.trim(),
+        year: new Date().getFullYear(),
+      })
+      .select("id, name, year")
+      .single();
+
+    if (error || !data) {
+      setErrorMessage("Could not create event. Try again.");
+      return null;
+    }
+
+    // Naya event list mein add karo aur select karo
+    setEvents((prev) => [data, ...prev]);
+    setEventId(data.id);
+    setShowNewEvent(false);
+    setNewEventName("");
+    return data.id;
+  }
 
   function handleFilesChosen(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -64,91 +113,93 @@ export default function UploadPage() {
     setSelectedPhotos(selectedPhotos.filter((_, i) => i !== indexToRemove));
   }
 
-  // ============================================================
-  // REAL CLOUDINARY UPLOAD
-  // ============================================================
-  async function uploadOnePhoto(file: File): Promise<{ publicId: string; imageUrl: string; thumbnailUrl: string }> {
-    // Step 1: Server se signature maango
-    const sigRes = await fetch('/api/cloudinary-signature', { method: 'POST' })
-    if (!sigRes.ok) throw new Error('Could not get upload signature')
-    const { signature, timestamp, cloudName, apiKey } = await sigRes.json()
+  async function uploadOnePhoto(file: File) {
+    const sigRes = await fetch("/api/cloudinary-signature", { method: "POST" });
+    if (!sigRes.ok) throw new Error("Could not get upload signature");
+    const { signature, timestamp, cloudName, apiKey } = await sigRes.json();
 
-    // Step 2: FormData banao
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('signature', signature)
-    formData.append('timestamp', String(timestamp))
-    formData.append('api_key', apiKey)
-    formData.append('folder', 'camplens')
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("signature", signature);
+    formData.append("timestamp", String(timestamp));
+    formData.append("api_key", apiKey);
+    formData.append("folder", "camplens");
 
-    // Step 3: Cloudinary pe upload karo
     const uploadRes = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: formData }
-    )
-    if (!uploadRes.ok) throw new Error('Cloudinary upload failed')
-    const result = await uploadRes.json()
+      { method: "POST", body: formData }
+    );
+    if (!uploadRes.ok) throw new Error("Cloudinary upload failed");
+    const result = await uploadRes.json();
 
-    // Step 4: Thumbnail URL banao (Cloudinary transformation)
-    const thumbnailUrl = result.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill,q_auto/')
+    const thumbnailUrl = result.secure_url.replace(
+      "/upload/",
+      "/upload/w_400,h_400,c_fill,q_auto/"
+    );
 
     return {
       publicId: result.public_id,
       imageUrl: result.secure_url,
       thumbnailUrl,
-    }
+    };
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (selectedPhotos.length === 0) return setErrorMessage("Add at least one photo.");
-    if (!eventId) return setErrorMessage("Pick the event these photos are from.");
+
+    // Agar new event form khula hai aur naam bhi bhara hai → pehle event banao
+    let finalEventId = eventId;
+    if (showNewEvent && newEventName.trim()) {
+      const created = await createEvent();
+      if (!created) return; // Event creation fail
+      finalEventId = created;
+    }
+
+    if (!finalEventId) return setErrorMessage("Pick or create an event.");
     if (hashtags.length === 0) return setErrorMessage("Add at least one hashtag.");
     if (caption.length > 120) return setErrorMessage("Keep caption under 120 characters.");
 
     setErrorMessage("");
     setIsUploading(true);
 
-    const selectedEvent = collegeEvents.find((e) => e.id === eventId)!;
+    const selectedEvent = events.find((e) => e.id === finalEventId);
     let successCount = 0;
 
     try {
       for (const selected of selectedPhotos) {
-        // Har photo ke liye:
-        // 1. Cloudinary pe upload karo
-        // 2. DB mein save karo
-        const { publicId, imageUrl, thumbnailUrl } = await uploadOnePhoto(selected.file)
+        const { publicId, imageUrl, thumbnailUrl } = await uploadOnePhoto(selected.file);
 
-        const saveRes = await fetch('/api/photos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const saveRes = await fetch("/api/photos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             cloudinaryPublicId: publicId,
             imageUrl,
             thumbnailUrl,
-            caption: caption.trim() || 'Untitled memory',
+            caption: caption.trim() || "Untitled memory",
             hashtags,
-            eventId,
-            year: selectedEvent.year,
+            eventId: finalEventId,
+            year: selectedEvent?.year ?? new Date().getFullYear(),
           }),
-        })
+        });
 
-        if (saveRes.ok) successCount++
-        else console.error('Save failed for', selected.file.name)
+        if (saveRes.ok) successCount++;
+        else console.error("Save failed for", selected.file.name);
       }
 
       if (successCount > 0) {
-        setUploadedCount(successCount)
-        setFirstTag(hashtags[0] ?? '')
+        setUploadedCount(successCount);
+        setFirstTag(hashtags[0] ?? "");
       } else {
-        setErrorMessage("Upload failed. Please try again.")
+        setErrorMessage("Upload failed. Please try again.");
       }
     } catch (err) {
-      console.error('Upload error:', err)
-      setErrorMessage("Upload failed. Check your connection.")
+      console.error("Upload error:", err);
+      setErrorMessage("Upload failed. Check your connection.");
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
   }
 
@@ -213,28 +264,73 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Event + Hashtags */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <div>
+        {/* Event selector */}
+        <div>
+          <div className="flex items-center justify-between">
             <label htmlFor="event" className="label">Event</label>
-            <select id="event" value={eventId} onChange={(e) => setEventId(e.target.value)} className="field">
-              <option value="">Select</option>
-              {collegeEvents.map((e) => (
-                <option key={e.id} value={e.id}>{e.name}</option>
+            <button
+              type="button"
+              onClick={() => {
+                setShowNewEvent(!showNewEvent);
+                setEventId(""); // Dropdown clear karo
+              }}
+              className="text-xs font-bold uppercase tracking-wider text-rust hover:underline"
+            >
+              {showNewEvent ? "← Pick existing" : "+ New event"}
+            </button>
+          </div>
+
+          {showNewEvent ? (
+            // New event input
+            <div className="flex gap-2">
+              <input
+                value={newEventName}
+                onChange={(e) => setNewEventName(e.target.value)}
+                placeholder="e.g. Rooftop Night, Trip to Manali…"
+                className="field flex-1"
+                autoFocus
+              />
+            </div>
+          ) : (
+            // Existing events dropdown
+            <select
+              id="event"
+              value={eventId}
+              onChange={(e) => setEventId(e.target.value)}
+              className="field"
+            >
+              <option value="">Select an event</option>
+              {events.length === 0 && (
+                <option disabled>No events yet — create one above</option>
+              )}
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} ({e.year})
+                </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label htmlFor="hashtags" className="label">Hashtags</label>
-            <input id="hashtags" value={hashtagText} onChange={(e) => setHashtagText(e.target.value)} placeholder="#Damru26 #Night" className="field" />
-          </div>
+          )}
+        </div>
+
+        {/* Hashtags */}
+        <div>
+          <label htmlFor="hashtags" className="label">Hashtags</label>
+          <input
+            id="hashtags"
+            value={hashtagText}
+            onChange={(e) => setHashtagText(e.target.value)}
+            placeholder="#Damru26 #Night #Friends"
+            className="field"
+          />
         </div>
 
         {/* Hashtag preview */}
         {hashtags.length > 0 && (
           <div className="flex flex-wrap gap-3">
             {hashtags.map((tag, index) => (
-              <span key={tag} className={`rubber-stamp text-rust ${index % 2 ? "rotate-1" : "-rotate-1"}`}>#{tag}</span>
+              <span key={tag} className={`rubber-stamp text-rust ${index % 2 ? "rotate-1" : "-rotate-1"}`}>
+                #{tag}
+              </span>
             ))}
           </div>
         )}
@@ -244,13 +340,23 @@ export default function UploadPage() {
           <label htmlFor="caption" className="label">
             Caption <span className="normal-case tracking-normal">({caption.length}/120)</span>
           </label>
-          <input id="caption" value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write it like the back of a photo…" className="field font-hand text-2xl" />
+          <input
+            id="caption"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Write it like the back of a photo…"
+            className="field font-hand text-2xl"
+          />
         </div>
 
-        {errorMessage && <p className="text-xs font-bold text-rust" role="alert">{errorMessage}</p>}
+        {errorMessage && (
+          <p className="text-xs font-bold text-rust" role="alert">{errorMessage}</p>
+        )}
 
         <button type="submit" disabled={isUploading} className="btn w-full py-3.5">
-          {isUploading ? `Uploading ${selectedPhotos.length} photo${selectedPhotos.length > 1 ? 's' : ''}…` : "Upload to the archive"}
+          {isUploading
+            ? `Uploading ${selectedPhotos.length} photo${selectedPhotos.length > 1 ? "s" : ""}…`
+            : "Upload to the archive"}
         </button>
       </form>
     </div>
