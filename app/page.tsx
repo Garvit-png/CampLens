@@ -17,6 +17,11 @@ export default function SelectSchoolPage() {
   const isAlreadySignedIn = isReady && Boolean(supabaseUser) && Boolean(profile?.is_onboarding_complete);
 
   useEffect(() => {
+    // Hash mein access_token hai? → confirm page pe bhejo
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+      router.replace('/auth/confirm' + window.location.hash)
+      return
+    }
     if (isAlreadySignedIn) router.replace("/gallery");
   }, [isAlreadySignedIn, router]);
 
