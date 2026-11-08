@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Developing from "@/components/Developing";
 import { createClient } from "@/lib/supabase/client";
+import { useSession } from "@/lib/session";
 // Real Supabase client — profile save karne ke liye
 
 const thisYear = new Date().getFullYear();
@@ -24,6 +25,7 @@ for (let year = thisYear; year <= thisYear + 5; year++) {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { isReady, supabaseUser, profile: existingProfile, refreshProfile } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
   const [collegeName, setCollegeName] = useState("");
@@ -34,66 +36,57 @@ export default function OnboardingPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // ----------------------------------------------------------
-  // Page load pe: current user check karo + college dhundho
+  // Page load pe: SessionProvider se user data lo
   // ----------------------------------------------------------
   useEffect(() => {
     async function loadUserData() {
-      const supabase = createClient()
+      // Wait for SessionProvider to be ready (it listens to auth state changes)
+      if (!isReady) return;
 
-      // Thoda wait karo — session cookie set hone mein time lagta hai
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Supabase se current logged-in user lo
-      const { data: { user }, error } = await supabase.auth.getUser()
-
-      if (error || !user) {
+      if (!supabaseUser) {
         // User logged in nahi → login pe bhejo
         router.replace("/")
         return
       }
 
-      setUserEmail(user.email ?? "")
+      setUserEmail(supabaseUser.email ?? "")
 
       // Existing profile check karo — agar already complete hai toh gallery pe
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, batch_year, college_id, is_onboarding_complete")
-        .eq("user_id", user.id)
-        .maybeSingle()
-
-      if (profile?.is_onboarding_complete) {
+      if (existingProfile?.is_onboarding_complete) {
         router.replace("/gallery")
         return
       }
 
       // Pehle se profile hai? Fields pre-fill karo
-      if (profile) {
-        setFullName(profile.full_name ?? "")
-        setBatchYear(profile.batch_year ? String(profile.batch_year) : "")
-        setCollegeId(profile.college_id ?? "")
+      if (existingProfile) {
+        setFullName(existingProfile.full_name ?? "")
+        setBatchYear(existingProfile.batch_year ? String(existingProfile.batch_year) : "")
+        setCollegeId(existingProfile.college_id ?? "")
       }
 
-      // User ke email domain se college dhundho
-      const emailDomain = (user.email ?? "").split("@")[1]
-      const { data: domainRow } = await supabase
-        .from("college_email_domains")
-        .select("college_id, colleges(name)")
-        .eq("domain", emailDomain)
-        .maybeSingle()
+      // User ke email domain se college dhundho (agar profile mein nahi mila)
+      if (!collegeId && supabaseUser.email) {
+        const emailDomain = supabaseUser.email.split("@")[1]
+        const supabase = createClient()
+        const { data: domainRow } = await supabase
+          .from("college_email_domains")
+          .select("college_id, colleges(name)")
+          .eq("domain", emailDomain)
+          .maybeSingle()
 
-      if (domainRow) {
-        const cid = domainRow.college_id
-        setCollegeId(cid)
-        // colleges join se naam lo
-        const cname = (domainRow.colleges as { name?: string } | null)?.name ?? ""
-        setCollegeName(cname)
+        if (domainRow) {
+          const cid = domainRow.college_id
+          setCollegeId(cid)
+          const cname = (domainRow.colleges as { name?: string } | null)?.name ?? ""
+          setCollegeName(cname)
+        }
       }
 
       setIsLoading(false)
     }
 
     loadUserData()
-  }, [router])
+  }, [isReady, supabaseUser, existingProfile, router, collegeId])
 
 
   // ----------------------------------------------------------
@@ -106,24 +99,22 @@ export default function OnboardingPage() {
       return setErrorMessage("Please enter your full name.")
     if (!batchYear)
       return setErrorMessage("Please pick your batch.")
+    if (!supabaseUser) {
+      setErrorMessage("Session expired. Please sign in again.")
+      return
+    }
 
     setIsSaving(true)
     setErrorMessage("")
 
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        setErrorMessage("Session expired. Please sign in again.")
-        return
-      }
 
       // Profiles table mein upsert karo (insert ya update)
       const { error } = await supabase
         .from("profiles")
         .upsert({
-          user_id: user.id,
+          user_id: supabaseUser.id,
           // upsert = agar user_id pehle se hai → update, nahi hai → insert
           college_id: collegeId || null,
           full_name: fullName.trim(),
@@ -138,6 +129,8 @@ export default function OnboardingPage() {
         return
       }
 
+      // Refresh profile in session context
+      await refreshProfile()
       router.push("/gallery")
       // Profile saved → gallery pe jao!
 
