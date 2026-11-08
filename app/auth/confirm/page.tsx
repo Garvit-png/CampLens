@@ -15,6 +15,15 @@ export default function ConfirmPage() {
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
+    // URL mein error hai? (jaise expired link)
+    const params = new URLSearchParams(window.location.search)
+    const urlError = params.get('error')
+    if (urlError) {
+      setErrorMsg(urlError === 'access_denied' ? 'Link expired. Please request a new magic link.' : urlError)
+      setStatus('error')
+      return
+    }
+
     const supabase = createClient()
     let redirected = false
 
