@@ -55,13 +55,15 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
 
-      // OTP email bhejo — user 6-digit code type karega
+      // OTP email bhejo — user 8-digit code type karega
       // Yeh PKCE problem se free hai
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
           shouldCreateUser: true,
-          // Naya user bhi create ho sakta hai
+          data: {
+            college_id: collegeId, // extra data pass karo
+          }
         },
       });
 
@@ -157,7 +159,7 @@ function OtpScreen({
   async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (otp.trim().length < 6) {
-      setError("Please enter the 6-digit code.");
+      setError("Please enter the 8-digit code.");
       return;
     }
 
@@ -195,13 +197,13 @@ function OtpScreen({
       <p className="label">Step 2 of 3 · Verify</p>
       <h1 className="font-serif text-4xl">Enter your code.</h1>
       <p className="mt-3 text-sm text-muted">
-        We sent a 6-digit code to <strong>{email}</strong>.
+        We sent a 8-digit code to <strong>{email}</strong>.
         <br />Check your inbox (and spam folder).
       </p>
 
       <form onSubmit={handleVerify} noValidate className="mt-8 space-y-5">
         <div>
-          <label htmlFor="otp" className="label">6-digit code</label>
+          <label htmlFor="otp" className="label">8-digit code</label>
           <input
             id="otp"
             type="text"
@@ -211,7 +213,7 @@ function OtpScreen({
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             // /\D/g = non-digits remove karo (sirf numbers allow)
-            placeholder="123456"
+            placeholder="12345678"
             className="field text-2xl tracking-widest"
             autoFocus
           />
