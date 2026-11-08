@@ -1,3 +1,5 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -12,10 +14,46 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    // Code ko client page pe bhejo — wahan browser localStorage mein
-    // code_verifier available hoga (PKCE)
-    // Server pe code_verifier nahi hota
-    return NextResponse.redirect(`${origin}/auth/confirm?code=${code}`)
+    const cookieStore = await cookies()
+    const response = NextResponse.redirect(`${origin}/onboarding`)
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            // Request cookies + cookieStore dono se padho
+            const reqCookies = request.cookies.getAll()
+            const storeCookies = cookieStore.getAll()
+            // Merge karo — request wale priority pe
+            const merged = new Map(storeCookies.map(c => [c.name, c]))
+            reqCookies.forEach(c => merged.set(c.name, c))
+            return Array.from(merged.values())
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, {
+                ...options,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+              })
+            })
+          },
+        },
+      }
+    )
+
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      console.error('Exchange error:', error.message)
+      return NextResponse.redirect(`${origin}/?error=auth_failed`)
+    }
+
+    return response
   }
 
   return NextResponse.redirect(`${origin}/`)

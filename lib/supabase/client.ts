@@ -1,18 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
+  // createBrowserClient by default cookies use karta hai
+  // PKCE code_verifier cookies mein store hota hai
+  // Isliye koi custom storage override mat karo
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        flowType: 'pkce',
-        detectSessionInUrl: true,
-        persistSession: true,
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        // Explicitly localStorage use karo — cookies nahi
-        // Vercel pe server/client cookie mismatch avoid karo
-      }
-    }
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }

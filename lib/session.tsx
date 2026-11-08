@@ -40,9 +40,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // onAuthStateChange se start karo — yeh INITIAL_SESSION bhi fire karta hai
-    // localStorage mein session hai → INITIAL_SESSION with session
-    // Koi session nahi → INITIAL_SESSION with null
+    // onAuthStateChange handles INITIAL_SESSION automatically
+    // createBrowserClient cookies se session restore karta hai
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -56,7 +55,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
         }
 
-        // INITIAL_SESSION ke baad ready karo
         if (event === 'INITIAL_SESSION') {
           setIsReady(true);
         }
