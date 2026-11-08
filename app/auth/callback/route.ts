@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -7,56 +6,16 @@ export async function GET(request: NextRequest) {
   const errorParam = requestUrl.searchParams.get('error')
   const origin = requestUrl.origin
 
-  // Error aaya URL mein (jaise expired link)
   if (errorParam) {
     const errorDesc = requestUrl.searchParams.get('error_description') ?? 'Login failed'
-    console.error('Auth error from Supabase:', { error: errorParam, error_description: errorDesc, url: request.url })
-    // Redirect with BOTH error code and description for debugging
-    return NextResponse.redirect(
-      `${origin}/login?error_code=${encodeURIComponent(errorParam)}&error=${encodeURIComponent(errorDesc)}`
-    )
+    return NextResponse.redirect(`${origin}/?error=${encodeURIComponent(errorDesc)}`)
   }
 
   if (code) {
-    const response = NextResponse.redirect(`${origin}/onboarding`)
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, {
-                ...options,
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/',
-              })
-            })
-          },
-        },
-      }
-    )
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-
-    if (error) {
-      console.error('Code exchange error:', error.message)
-      return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent(error.message)}`
-      )
-    }
-
-    // CRITICAL: Call getSession() to trigger storage adapter's setAll()
-    // This ensures cookies are persisted via our setAll callback
-    await supabase.auth.getSession()
-
-    return response
+    // Code ko client-side page pe bhejo with the code
+    // Client browser mein code_verifier available hai
+    // Server pe code_verifier NAHI hota (PKCE ki limitation)
+    return NextResponse.redirect(`${origin}/auth/confirm?code=${code}`)
   }
 
   return NextResponse.redirect(`${origin}/`)
