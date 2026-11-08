@@ -12,16 +12,31 @@ export default function SelectSchoolPage() {
   const { isReady, supabaseUser, profile } = useSession();
   const router = useRouter();
   const [searchText, setSearchText] = useState("");
+  const [domainError, setDomainError] = useState("");
 
-  // Pehle se fully logged in hai? → gallery pe bhejo
   const isAlreadySignedIn = isReady && Boolean(supabaseUser) && Boolean(profile?.is_onboarding_complete);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     // Hash mein access_token hai? → confirm page pe bhejo
-    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
-      router.replace('/auth/confirm' + window.location.hash)
-      return
+    if (window.location.hash.includes('access_token')) {
+      router.replace('/auth/confirm' + window.location.hash);
+      return;
     }
+
+    // Domain not allowed error? (onboarding se aaya)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'domain_not_allowed') {
+      const email = params.get('email') ?? '';
+      const domain = email.split('@')[1] ?? '';
+      setDomainError(
+        `"${domain}" is not a registered college domain. Please use your official college email account.`
+      );
+      // URL clean karo history se
+      window.history.replaceState({}, '', '/');
+    }
+
     if (isAlreadySignedIn) router.replace("/gallery");
   }, [isAlreadySignedIn, router]);
 
@@ -33,7 +48,6 @@ export default function SelectSchoolPage() {
   );
 
   function handlePick(id: string) {
-    // College ID localStorage mein store karo (login page ke liye)
     localStorage.setItem("selected_college_id", id);
     router.push("/login");
   }
@@ -53,6 +67,15 @@ export default function SelectSchoolPage() {
           center="POST"
           className="absolute -top-4 right-0 hidden w-36 rotate-12 text-rust/70 md:block"
         />
+
+        {/* Domain error message */}
+        {domainError && (
+          <div className="mt-6 rounded-md border-2 border-rust bg-rust/5 px-4 py-3">
+            <p className="text-sm font-bold text-rust">⚠ Access Denied</p>
+            <p className="mt-1 text-sm text-rust/80">{domainError}</p>
+          </div>
+        )}
+
         <input
           type="search"
           value={searchText}

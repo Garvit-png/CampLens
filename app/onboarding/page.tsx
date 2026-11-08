@@ -58,11 +58,18 @@ export default function OnboardingPage() {
         .maybeSingle();
 
       if (data) {
+        // ✅ Domain registered hai → college mil gaya
         setCollegeId(data.college_id);
         const name = (data.colleges as { name?: string } | null)?.name ?? "";
         setCollegeName(name);
+        setDomainLoaded(true);
+      } else {
+        // ❌ Domain registered nahi → sign out karo aur error ke saath home pe bhejo
+        const supabaseClient = createClient();
+        await supabaseClient.auth.signOut();
+        const email = supabaseUser?.email ?? '';
+        router.replace(`/?error=domain_not_allowed&email=${encodeURIComponent(email)}`);
       }
-      setDomainLoaded(true);
     }
 
     findCollege();
