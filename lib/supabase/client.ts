@@ -6,12 +6,14 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        flowType: 'implicit',
-        // Implicit flow use karo — PKCE Vercel pe kaam nahi karta
-        // Implicit mein token URL hash mein aata hai, code verifier nahi chahiye
+        flowType: 'pkce',
+        // PKCE flow use karo — Supabase ?code= bhej raha hai
+        // code_verifier browser storage mein save hota hai login ke time
+        // confirm page pe exchangeCodeForSession() se verify hota hai
         detectSessionInUrl: true,
-        // Hash se automatically session detect karo
-      },
+        persistSession: true,
+        // Session localStorage mein save karo (refresh ke baad bhi rahe)
+      }
     }
   )
 }

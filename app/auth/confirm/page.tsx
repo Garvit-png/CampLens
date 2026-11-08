@@ -1,9 +1,5 @@
 'use client'
 
-// Yeh page email link click karne ke baad khulta hai
-// URL mein hash hoga: /auth/confirm#access_token=xxx&type=magiclink
-// Supabase client hash se automatically session set karta hai
-
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -15,56 +11,65 @@ export default function ConfirmPage() {
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
-    // URL mein error hai? (jaise expired link)
-    const params = new URLSearchParams(window.location.search)
-    const urlError = params.get('error')
-    if (urlError) {
-      setErrorMsg(urlError === 'access_denied' ? 'Link expired. Please request a new magic link.' : urlError)
-      setStatus('error')
-      return
-    }
+    async function handleAuth() {
+      // URL se params nikalo
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+      const errorParam = params.get('error')
 
-    const supabase = createClient()
-    let redirected = false
-
-    function goToOnboarding() {
-      if (!redirected) {
-        redirected = true
-        router.replace('/onboarding')
-      }
-    }
-
-    // onAuthStateChange - implicit flow mein SIGNED_IN event aayega
-    // jab Supabase client hash se token detect karega
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Confirm page auth event:', event, !!session)
-      if (event === 'SIGNED_IN' && session) {
-        goToOnboarding()
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        goToOnboarding()
-      }
-    })
-
-    // Pehle se session check karo
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Confirm page existing session:', !!session)
-      if (session) {
-        goToOnboarding()
-      }
-    })
-
-    // 10 second timeout
-    const timer = setTimeout(() => {
-      if (!redirected) {
-        setErrorMsg('Could not sign in. The link may have expired.')
+      // Error aaya? (jaise expired link)
+      if (errorParam) {
+        setErrorMsg('Link expired. Please request a new magic link.')
         setStatus('error')
+        return
       }
-    }, 10000)
 
-    return () => {
-      clearTimeout(timer)
-      subscription.unsubscribe()
+      const supabase = createClient()
+
+      // PKCE flow: ?code= wala URL
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          console.error('Code exchange error:', error.message)
+          setErrorMsg('Link expired or already used. Please request a new one.')
+          setStatus('error')
+          return
+        }
+        router.replace('/onboarding')
+        return
+      }
+
+      // Implicit flow: #access_token= wala hash
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        // Hash mein token hai — onAuthStateChange detect karega
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            subscription.unsubscribe()
+            router.replace('/onboarding')
+          }
+        })
+
+        // 5 second timeout
+        setTimeout(() => {
+          setErrorMsg('Could not verify login. Please try again.')
+          setStatus('error')
+        }, 5000)
+        return
+      }
+
+      // Koi token nahi — already logged in?
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        router.replace('/onboarding')
+        return
+      }
+
+      setErrorMsg('No login token found. Please request a new magic link.')
+      setStatus('error')
     }
+
+    handleAuth()
   }, [router])
 
   if (status === 'error') {
