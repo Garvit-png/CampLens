@@ -33,7 +33,10 @@ export default function SelectSchoolPage() {
       setDomainError(
         `"${domain}" is not a registered college domain. Please use your official college email account.`
       );
-      // URL clean karo history se
+      window.history.replaceState({}, '', '/');
+    } else if (params.get('error') === 'auth_failed') {
+      const reason = params.get('reason') ?? '';
+      setDomainError(`Sign in failed: ${reason || 'Please try again.'}`);
       window.history.replaceState({}, '', '/');
     }
 

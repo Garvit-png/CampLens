@@ -45,8 +45,13 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error('Exchange error:', error.message)
-      return NextResponse.redirect(`${origin}/?error=auth_failed`)
+      console.error('Exchange error code:', code.substring(0, 8))
+      console.error('Exchange error message:', error.message)
+      console.error('Exchange error status:', error.status)
+      // Cookies jo available hain log karo (names only, not values)
+      const cookieNames = cookieStore.getAll().map(c => c.name)
+      console.error('Available cookies:', cookieNames.join(', '))
+      return NextResponse.redirect(`${origin}/?error=auth_failed&reason=${encodeURIComponent(error.message)}`)
     }
 
     return response
