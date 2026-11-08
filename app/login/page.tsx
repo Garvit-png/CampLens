@@ -58,7 +58,9 @@ export default function LoginPage() {
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          // Seedha confirm page pe — callback route ke through nahi
+          // Implicit flow: token hash mein aayega → /auth/confirm#access_token=xxx
         },
       });
       if (authError) {
