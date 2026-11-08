@@ -11,14 +11,12 @@ export async function GET(request: NextRequest) {
   if (errorParam) {
     const errorDesc = requestUrl.searchParams.get('error_description') ?? 'Login failed'
     console.error('Auth error from Supabase:', errorParam, errorDesc)
-    // Login page pe bhejo with error message
     return NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(errorDesc)}`
     )
   }
 
   if (code) {
-    // Create response FIRST so we can set cookies on it
     const response = NextResponse.redirect(`${origin}/onboarding`)
 
     const supabase = createServerClient(
@@ -44,7 +42,7 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error, data } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
       console.error('Code exchange error:', error.message)
@@ -53,7 +51,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Return response with cookies already set
+    // EXPLICITLY set session cookies from the exchanged session
+    // This ensures cookies are set even if storage adapter doesn't call setAll
+    if (data.session) {
+      const { access_token, refresh_token, expires_at } = data.session
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+        maxAge: expires_at ? Math.max(0, expires_at - Math.floor(Date.now() / 1000)) : undefined,
+      }
+      response.cookies.set('sb-access-token', access_token, cookieOptions)
+      response.cookies.set('sb-refresh-token', refresh_token, cookieOptions)
+    }
+
     return response
   }
 
