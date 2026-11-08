@@ -1,5 +1,4 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
@@ -19,16 +18,20 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    const cookieStore = await cookies()
+    // Create response FIRST so we can set cookies on it
+    const response = NextResponse.redirect(`${origin}/onboarding`)
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() { return cookieStore.getAll() },
+          getAll() {
+            return request.cookies.getAll()
+          },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, {
+              response.cookies.set(name, value, {
                 ...options,
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
@@ -50,7 +53,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.redirect(`${origin}/onboarding`)
+    // Return response with cookies already set
+    return response
   }
 
   return NextResponse.redirect(`${origin}/`)
