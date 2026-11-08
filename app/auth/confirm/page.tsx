@@ -1,9 +1,5 @@
 'use client'
 
-// Yeh page BROWSER mein chalta hai
-// Server pe cookie set karne ki jagah, browser khud session set karta hai
-// Yeh Vercel pe 100% reliable hai
-
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -14,32 +10,46 @@ export default function ConfirmPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    async function exchangeCode() {
-      // URL se code nikalo
-      const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
-
-      if (!code) {
-        setError('No code found')
-        return
-      }
-
-      // Browser-side Supabase client se code exchange karo
-      // Yeh automatically localStorage/cookies mein session save karega
+    async function handleAuth() {
       const supabase = createClient()
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+      // Implicit flow: token URL hash mein hota hai
+      // Example: /auth/confirm#access_token=xxx&refresh_token=yyy
+      // Supabase client automatically hash se session set karta hai
+      const { data: { session }, error } = await supabase.auth.getSession()
 
       if (error) {
-        console.error('Exchange error:', error.message)
+        console.error('Session error:', error.message)
         setError(error.message)
         return
       }
 
-      // Session set ho gaya — onboarding pe jao
-      router.replace('/onboarding')
+      if (session) {
+        // Session mil gaya → onboarding pe jao
+        console.log('Session found:', session.user.email)
+        router.replace('/onboarding')
+        return
+      }
+
+      // Session nahi mila → thoda wait karo (hash process hone mein time lagta hai)
+      // onAuthStateChange se session aayega
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth event on confirm:', event)
+        if (session) {
+          subscription.unsubscribe()
+          router.replace('/onboarding')
+        } else if (event === 'SIGNED_OUT') {
+          setError('Sign in failed. Please try again.')
+        }
+      })
+
+      // 5 seconds baad bhi session nahi → error
+      setTimeout(() => {
+        setError('Could not verify your login. Please try again.')
+      }, 5000)
     }
 
-    exchangeCode()
+    handleAuth()
   }, [router])
 
   if (error) {
