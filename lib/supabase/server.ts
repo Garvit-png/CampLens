@@ -38,6 +38,10 @@ export async function createClient() {
     // SERVICE_ROLE_KEY sirf tab use karo jab RLS bypass karna ho (admin tasks)
 
     {
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+      },
       cookies: {
         // Supabase ko batao cookies kaise padhne aur likhne hain
         getAll() {
