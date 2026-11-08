@@ -9,7 +9,7 @@
 | Member | Total Kaam | Done | Pending | Progress |
 |--------|-----------|------|---------|----------|
 | **Garvit** 👑 | 32 tasks | 26 | 6 | **🟢 81%** |
-| **Japinder** 📸 | 7 tasks | 5 | 2 | **🟡 71%** |
+| **Japinder** 📸 | 10 tasks | 7 | 3 | **🟡 57%** |
 | **Vansh** 🔍 | 6 tasks | 3 | 3 | **🔴 50%** |
 | **Keshav** 🎨 | 5 tasks | 2 | 3 | **🔴 30%** |
 
@@ -54,17 +54,20 @@
 
 ---
 
-## 📸 JAPINDER — 71% Complete
+## 📸 JAPINDER — 57% Complete
 
 | # | Kaam | File | Status |
 |---|------|------|--------|
 | 1 | Caption se hashtags nikalna (`extractHashtags`) | `lib/hashtags.ts` | ✅ Done |
-| 2 | Hashtags database mein save karna | `lib/hashtags.ts` | ✅ Done |
-| 3 | Photo-tag connection save karna | `lib/hashtags.ts` | ✅ Done |
-| 4 | File type check — sirf JPG/PNG/WEBP | `lib/validateUpload.ts` | ✅ Done |
+| 2 | Hashtags database mein save karna (`saveHashtagsToDatabase`) | `lib/hashtags.ts` | ✅ Done |
+| 3 | Photo-tag connection save karna (`processPhotoHashtags`) | `lib/hashtags.ts` | ✅ Done |
+| 4 | File type check — sirf JPG/PNG/WEBP allow | `lib/validateUpload.ts` | ✅ Done |
 | 5 | File size check — max 5MB | `lib/validateUpload.ts` | ✅ Done |
-| 6 | Date formatting functions | `lib/formatDate.ts` | ✅ Done |
-| 7 | Search helper functions | `lib/searchHelpers.ts` | ⚠️ File bani, testing pending |
+| 6 | Date formatting (formatDate, timeAgo, formatMonth) | `lib/formatDate.ts` | ✅ Done |
+| 7 | Search helpers (cleanSearchQuery, isValidSearch) | `lib/searchHelpers.ts` | ✅ Done |
+| 8 | Cloudinary upload helper function | `lib/cloudinary.ts` | ❌ Pending |
+| 9 | Photos fetch from Supabase (with filters) | `lib/photoQueries.ts` | ❌ Pending |
+| 10 | Popular tags fetch from Supabase | `lib/tagQueries.ts` | ❌ Pending |
 
 ---
 

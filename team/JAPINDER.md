@@ -1,436 +1,403 @@
 # 👨‍💻 JAPINDER KA KAAM — CampusLens Project
 
-> **Japinder aur Garvit saath milke Stage 5 (Photo Upload) karenge.**
-> Garvit kaam karega (Cloudinary API, database save, security).
-> Tera kaam hai: **Caption se hashtags nikalna** aur **tags database mein save karna**.
-> Yeh pure backend ka kaam hai — koi UI nahi banana.
+> **Japinder aur Garvit saath milke Stage 5 + Stage 6 karenge.**
+> Tera kaam: Pure backend logic — koi UI nahi, koi page nahi.
+> Jo tu likhega, Garvit directly import karke use karega.
 
 ---
 
 ## 📋 TERA TOTAL KAAM (Quick Summary)
 
-| # | Kaam | File | Difficulty |
-|---|------|------|------------|
-| 1 | Caption se hashtags nikalna (regex) | `lib/hashtags.ts` | ⭐⭐ Medium |
-| 2 | Tags database mein save karna | `lib/hashtags.ts` | ⭐⭐ Medium |
-| 3 | Photo-tag connection save karna | `lib/hashtags.ts` | ⭐⭐ Medium |
-| 4 | File type + size validation | `lib/validateUpload.ts` | ⭐ Easy |
-| 5 | Dates readable format mein banana | `lib/formatDate.ts` | ⭐ Easy |
-| 6 | Search text clean karna | `lib/searchHelpers.ts` | ⭐ Easy |
-
-> Teeno nayi files (4, 5, 6) pure logic hain — koi UI nahi, koi database nahi.
-> Garvit, Keshav, Vansh teeno inhe import karke use karenge.
-
----
-
-## 💻 SETUP (Sirf ek baar)
-
-```bash
-# Clone karo
-git clone https://github.com/garvit-username/CampusLens.git
-cd CampusLens
-npm install
-
-# Apni branch banao
-git checkout -b japinder-hashtag-logic
-
-# Garvit se .env.local ki values maango, file banao
-cp .env.example .env.local
-# Values paste karo
-
-# Start karo
-npm run dev
-```
+| # | Kaam | File | Status |
+|---|------|------|--------|
+| 1 | Caption se hashtags nikalna | `lib/hashtags.ts` | ✅ Done |
+| 2 | Tags database mein save karna | `lib/hashtags.ts` | ✅ Done |
+| 3 | Photo-tag connection | `lib/hashtags.ts` | ✅ Done |
+| 4 | File type + size validation | `lib/validateUpload.ts` | ✅ Done |
+| 5 | Date formatting functions | `lib/formatDate.ts` | ✅ Done |
+| 6 | Search helpers | `lib/searchHelpers.ts` | ✅ Done |
+| 7 | Cloudinary upload helper | `lib/cloudinary.ts` | ❌ Karna hai |
+| 8 | Photo fetch from Supabase | `lib/photoQueries.ts` | ❌ Karna hai |
+| 9 | Popular tags from Supabase | `lib/tagQueries.ts` | ❌ Karna hai |
 
 ---
 
-## 🧠 PEHLE YEH SAMJHO — Tera kaam kya hai?
+## 🆕 NAYA KAAM 1 — `lib/cloudinary.ts`
 
-Jab koi photo upload karta hai, caption kuch aisa hota hai:
+### Yeh kya karega?
+Jab user photo upload kare, pehle server se **signed URL** maangni padti hai.
+Yeh file woh helper function provide karegi jo:
+1. Server se signature maangega
+2. Cloudinary pe directly upload karega
+3. URL wapas return karega
 
+### Kaise kaam karta hai?
 ```
-"Freshers night 2024! Best memories 🎉 #Damru26 #IITD #NeverForget"
+User photo select kare
+       ↓
+uploadToCloudinary(file) call karo
+       ↓
+/api/cloudinary-signature pe POST request → signature + timestamp milegi
+       ↓
+Cloudinary pe file + signature bhejo
+       ↓
+Image URL wapas aayegi
 ```
 
-Is caption se:
-1. `#Damru26`, `#IITD`, `#NeverForget` nikalne hain
-2. Pehle check karo kya yeh tags database mein already hain
-3. Nahi hain toh naye banao
-4. Photo aur tags ka connection `photo_tags` table mein save karo
-
-Yeh sab teri ek function `saveHashtagsFromCaption()` karega.
-
----
-
-## 📝 KAAM 1 — Caption se Hashtags Nikalna
-
-### File banao: `lib/hashtags.ts`
+### File banao: `lib/cloudinary.ts`
 
 ```typescript
-// =============================================================
-// lib/hashtags.ts
-// =============================================================
-// Yeh file caption text se hashtags nikaalti hai
-// aur unhe Supabase database mein save karti hai.
+// ============================================================
+// lib/cloudinary.ts — CLOUDINARY UPLOAD HELPER
+// ============================================================
+// Yeh file photo upload ka kaam karta hai.
+// Garvit ki upload page yeh import karegi.
 //
-// Garvit ki upload API is file ki functions call karegi.
-// =============================================================
+// SECURITY:
+// API secret kabhi browser mein nahi aata.
+// Server se sirf signature aati hai (time-limited).
+// ============================================================
 
+// Upload response ka shape define karo
+// TypeScript interface = object ki shape batata hai
+export interface CloudinaryUploadResult {
+  publicId: string;     // Cloudinary ka unique ID (delete/transform ke liye)
+  imageUrl: string;     // Full URL (gallery mein dikhane ke liye)
+  thumbnailUrl: string; // Chhoti version URL (gallery grid ke liye)
+  width: number;        // Image width in pixels
+  height: number;       // Image height in pixels
+  sizeBytes: number;    // File size in bytes
+}
 
-// ---------------------------------------------------------------
-// FUNCTION 1: extractHashtags
-// ---------------------------------------------------------------
-// Kaam: Caption string se saare hashtags nikalo
+// ============================================================
+// FUNCTION: uploadToCloudinary
+// ============================================================
+// Input:  File object (browser ka)
+// Output: CloudinaryUploadResult (ya error throw)
+// ============================================================
+export async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResult> {
+
+  // Step 1: Server se signature maango
+  // Server CLOUDINARY_API_SECRET use karta hai — browser mein nahi aata
+  const signatureResponse = await fetch('/api/cloudinary-signature', {
+    method: 'POST',
+  })
+
+  if (!signatureResponse.ok) {
+    throw new Error('Could not get upload signature from server')
+    // throw = error bhejo (calling code try/catch mein pakdega)
+  }
+
+  const { signature, timestamp, cloudName, apiKey } = await signatureResponse.json()
+  // Destructuring: object se specific values nikalo
+
+  // Step 2: FormData banao
+  // FormData = file aur text data ek saath bhejne ka tarika
+  const formData = new FormData()
+  formData.append('file', file)                    // Actual photo file
+  formData.append('signature', signature)           // Server ne generate ki
+  formData.append('timestamp', String(timestamp))   // Unix timestamp
+  formData.append('api_key', apiKey)                // Public API key
+  formData.append('folder', 'camplens')             // Cloudinary folder
+
+  // Step 3: Cloudinary pe directly upload karo
+  const uploadResponse = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: 'POST', body: formData }
+  )
+
+  if (!uploadResponse.ok) {
+    throw new Error('Upload to Cloudinary failed')
+  }
+
+  const result = await uploadResponse.json()
+  // result.secure_url = full image URL
+  // result.public_id = Cloudinary ka unique ID
+
+  // Step 4: Thumbnail URL banao
+  // Cloudinary URL mein transformation parameters add kar sakte hain
+  // w_400,h_400,c_fill = 400x400 crop
+  const thumbnailUrl = result.secure_url.replace(
+    '/upload/',
+    '/upload/w_400,h_400,c_fill/'
+    // Replace karo: /upload/ → /upload/w_400,h_400,c_fill/
+    // Yeh Cloudinary ka URL transformation feature hai
+  )
+
+  return {
+    publicId: result.public_id,
+    imageUrl: result.secure_url,
+    thumbnailUrl,
+    width: result.width,
+    height: result.height,
+    sizeBytes: result.bytes,
+  }
+}
+```
+
+---
+
+## 🆕 NAYI KAAM 2 — `lib/photoQueries.ts`
+
+### Yeh kya karega?
+Gallery page abhi mock data use kar raha hai. Jab real database connect hogi toh
+Gallery seedha yeh functions call karegi.
+
+### File banao: `lib/photoQueries.ts`
+
+```typescript
+// ============================================================
+// lib/photoQueries.ts — SUPABASE PHOTO FETCH FUNCTIONS
+// ============================================================
+// Yeh file database se photos fetch karti hai.
+// Gallery page yeh import karegi jab real data chahiye.
 //
-// Input:  "Freshers night! #Damru26 #IITD #NeverForget"
-// Output: ["Damru26", "IITD", "NeverForget"]
-//
-// Regex kya hota hai?
-// Regex = Regular Expression = ek pattern jo text mein search karta hai
-// Example: /[a-z]+/ → sirf lowercase letters dhundho
-// ---------------------------------------------------------------
+// Abhi mock data use hoti hai — jab Garvit Supabase connect kare
+// tab Gallery pe yeh functions lagenge.
+// ============================================================
 
-export function extractHashtags(caption: string): string[] {
-  // caption nahi hai ya empty hai → empty array return karo
-  if (!caption || caption.trim() === '') {
+// Filter options ka shape
+export interface PhotoFetchOptions {
+  collegeId: string;     // Sirf is college ki photos
+  year?: number;         // Optional: kaunse saal ki (undefined = sab)
+  eventId?: string;      // Optional: kaunse event ki (undefined = sab)
+  hashtag?: string;      // Optional: kaunsa hashtag (undefined = sab)
+  limit?: number;        // Ek page mein kitni photos (default: 12)
+  offset?: number;       // Pagination: kahan se start karo (default: 0)
+}
+
+// ============================================================
+// FUNCTION: fetchPhotos
+// ============================================================
+// Supabase se photos fetch karo with filters
+// ============================================================
+export async function fetchPhotos(supabase: any, options: PhotoFetchOptions) {
+  const {
+    collegeId,
+    year,
+    eventId,
+    hashtag,
+    limit = 12,   // Default: 12 photos per page
+    offset = 0,   // Default: page 1 se start
+  } = options
+  // Destructuring with defaults: agar caller ne nahi diya toh default use karo
+
+  // Supabase query build karo
+  let query = supabase
+    .from('photos')
+    // photos table se
+    .select(`
+      id,
+      image_url,
+      thumbnail_url,
+      caption,
+      hashtags,
+      year,
+      uploaded_at,
+      profiles ( full_name ),
+      events ( name )
+    `)
+    // Select karo: photo fields + joined data
+    // profiles(full_name) = uploader ka naam
+    // events(name) = event ka naam
+    .eq('college_id', collegeId)
+    // Sirf is college ki photos
+    .eq('is_approved', true)
+    // Sirf approved photos
+    .order('uploaded_at', { ascending: false })
+    // Newest first
+    .range(offset, offset + limit - 1)
+    // Pagination: offset se limit tak
+
+  // Optional filters — sirf tab add karo jab value ho
+  if (year) {
+    query = query.eq('year', year)
+    // Year filter
+  }
+
+  if (eventId) {
+    query = query.eq('event_id', eventId)
+    // Event filter
+  }
+
+  if (hashtag) {
+    query = query.contains('hashtags', [hashtag])
+    // Array contains check: hashtags column mein yeh hashtag hai?
+    // PostgreSQL GIN index yeh fast banata hai
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Photos fetch error:', error.message)
     return []
   }
 
-  // Regex pattern: /#(\w+)/g
-  // #    → hash symbol se start hona chahiye
-  // (    → group start (yeh part capture karenge)
-  // \w+  → ek ya zyada word characters (a-z, A-Z, 0-9, _)
-  // )    → group end
-  // g    → global flag = saare matches nikalo, sirf pehla nahi
-  //
-  // Example:
-  // "#Damru26 #IITD" pe match karoge toh:
-  // Match 1: full="#Damru26", group1="Damru26"
-  // Match 2: full="#IITD",    group1="IITD"
-  const hashtagRegex = /#(\w+)/g
-
-  const hashtags: string[] = []
-  // [] = empty array jisme results store honge
-
-  // matchAll → sab matches ek saath nikalo
-  const matches = caption.matchAll(hashtagRegex)
-  // matchAll returns an iterator (ek ke baad ek results deta hai)
-
-  for (const match of matches) {
-    // match[0] = "#Damru26" (poora match)
-    // match[1] = "Damru26"  (pehla group — # ke baad wala part)
-
-    const tag = match[1].trim()
-    // .trim() → extra spaces remove karo
-
-    // Duplicate check: agar yeh tag already array mein hai toh skip karo
-    // includes() → array mein value hai ya nahi check karta hai
-    if (tag && !hashtags.includes(tag)) {
-      hashtags.push(tag)
-      // .push() → array ke end mein add karo
-    }
-  }
-
-  return hashtags
-  // Example output: ["Damru26", "IITD", "NeverForget"]
+  return data ?? []
 }
 
+// ============================================================
+// FUNCTION: fetchPhotoById
+// ============================================================
+// Ek specific photo fetch karo (detail page ke liye)
+// ============================================================
+export async function fetchPhotoById(supabase: any, photoId: string) {
+  const { data, error } = await supabase
+    .from('photos')
+    .select(`
+      id,
+      image_url,
+      caption,
+      hashtags,
+      year,
+      uploaded_at,
+      profiles ( full_name ),
+      events ( name )
+    `)
+    .eq('id', photoId)
+    .eq('is_approved', true)
+    .single()
+  // single() = sirf ek row chahiye
 
-// ---------------------------------------------------------------
-// FUNCTION 2: saveHashtagsToDatabase
-// ---------------------------------------------------------------
-// Kaam: Hashtags array lo aur Supabase mein save karo
-//
-// Input:
-//   - supabase: database connection (Garvit dega)
-//   - photoId: kaunsi photo ka tag hai ("abc-123-xyz")
-//   - hashtags: ["Damru26", "IITD", "NeverForget"]
-//   - collegeId: kaunse college ka tag hai
-//
-// Output: void (kuch return nahi, sirf save karta hai)
-//
-// ASYNC/AWAIT kya hota hai?
-// Database operations time lete hain (network request jati hai).
-// async = "yeh function time le sakta hai"
-// await = "yahan ruko jab tak result aaye"
-// Jaise delivery ka wait karna — jab tak aaye, baaki kaam mat karo
-// ---------------------------------------------------------------
-
-export async function saveHashtagsToDatabase(
-  supabase: any,        // Supabase client (Garvit provide karega)
-  photoId: string,      // Photo ka unique ID
-  hashtags: string[],   // ["Damru26", "IITD", "NeverForget"]
-  collegeId: string     // College ka ID
-): Promise<void> {
-
-  // Agar koi hashtag nahi hai → kuch karne ki zaroorat nahi
-  if (hashtags.length === 0) {
-    console.log('Koi hashtag nahi mila caption mein')
-    return
+  if (error) {
+    console.error('Photo fetch error:', error.message)
+    return null
   }
 
-  // Har hashtag ke liye loop chalao
-  for (const tagName of hashtags) {
-    // for...of = array ke har item pe ek ek karke kaam karo
+  return data
+}
+```
 
-    try {
-      // -----------------------------------------------------------
-      // STEP A: Check karo kya yeh tag already database mein hai
-      // -----------------------------------------------------------
-      // .from('tags')     → tags table
-      // .select('id')     → sirf id column chahiye
-      // .eq('name', tagName) → jahan name = tagName
-      // .single()         → sirf ek row chahiye
-      const { data: existingTag, error: fetchError } = await supabase
-        .from('tags')
-        .select('id')
-        .eq('name', tagName)
-        .maybeSingle()
-      // maybeSingle() → agar nahi mila toh null aata hai (error nahi)
-      // single()      → agar nahi mila toh error aata hai
+---
 
-      // fetchError matlab database se connect hi nahi ho paya
-      if (fetchError) {
-        console.error(`Tag "${tagName}" fetch karne mein error:`, fetchError.message)
-        continue
-        // continue → is iteration skip karo, next hashtag pe jao
-      }
+## 🆕 NAYI KAAM 3 — `lib/tagQueries.ts`
 
-      let tagId: string
-      // let = value baad mein assign karenge (const nahi kyunki change hogi)
+### Yeh kya karega?
+Gallery mein "Popular stamps" section hota hai — sabse zyada use hone wale hashtags.
+Abhi mock data se calculate hote hain. Real mein database se aayenge.
 
-      if (existingTag) {
-        // -----------------------------------------------------------
-        // STEP B: Tag already hai → uska ID use karo
-        // -----------------------------------------------------------
-        tagId = existingTag.id
-        console.log(`Tag "${tagName}" already hai, ID: ${tagId}`)
+### File banao: `lib/tagQueries.ts`
 
-        // Usage count badha do (kitni photos mein use hua)
-        // .update() → existing row update karo
-        // .eq()     → kaunsi row update karni hai
-        await supabase
-          .from('tags')
-          .update({ usage_count: existingTag.usage_count + 1 })
-          .eq('id', tagId)
+```typescript
+// ============================================================
+// lib/tagQueries.ts — SUPABASE TAG FETCH FUNCTIONS
+// ============================================================
+// Yeh file database se tags/hashtags fetch karti hai.
+// Gallery ka "Popular stamps" section yeh use karega.
+// ============================================================
 
-      } else {
-        // -----------------------------------------------------------
-        // STEP C: Tag naya hai → database mein insert karo
-        // -----------------------------------------------------------
-        // .insert() → naya row banana
-        // .select('id') → naye row ka ID wapas chahiye
-        // .single()     → ek hi row insert hogi
-        const { data: newTag, error: insertError } = await supabase
-          .from('tags')
-          .insert({
-            name: tagName,         // Tag ka naam: "Damru26"
-            college_id: collegeId, // Kis college ka tag hai
-            usage_count: 1,        // Pehli baar use ho raha hai
-          })
-          .select('id')
-          .single()
-
-        if (insertError || !newTag) {
-          console.error(`Tag "${tagName}" insert karne mein error:`, insertError?.message)
-          continue
-        }
-
-        tagId = newTag.id
-        console.log(`Naya tag "${tagName}" bana, ID: ${tagId}`)
-      }
-
-      // -----------------------------------------------------------
-      // STEP D: Photo aur Tag ka connection banana (photo_tags table)
-      // -----------------------------------------------------------
-      // photo_tags ek junction table hai
-      // Ek photo ke multiple tags ho sakte hain
-      // Ek tag multiple photos mein ho sakta hai
-      //
-      // .upsert() = insert OR update
-      // Agar (photoId + tagId) combination already hai → skip
-      // Nahi hai → insert karo
-      // onConflict → duplicate pe kya karo (ignore = skip)
-      const { error: linkError } = await supabase
-        .from('photo_tags')
-        .upsert(
-          {
-            photo_id: photoId, // Kaunsi photo
-            tag_id: tagId,     // Kaunsa tag
-          },
-          { onConflict: 'photo_id,tag_id' }
-          // onConflict → agar yeh combination already hai toh error mat do
-        )
-
-      if (linkError) {
-        console.error(`Photo-tag link error (${tagName}):`, linkError.message)
-        continue
-      }
-
-      console.log(`✅ Tag "${tagName}" photo se link ho gaya`)
-
-    } catch (unexpectedError) {
-      // catch → koi bhi unexpected error aaye toh yahan aao
-      // Ek tag fail ho toh baaki ko kharab mat karo — continue karo
-      console.error(`Unexpected error for tag "${tagName}":`, unexpectedError)
-      continue
-    }
-  }
-
-  console.log(`✅ Saare ${hashtags.length} hashtags save ho gaye photo: ${photoId}`)
+// Tag ka shape
+export interface TagWithCount {
+  id: string;
+  name: string;          // "Damru26" (bina #)
+  usage_count: number;   // Kitni photos mein use hua
 }
 
-
-// ---------------------------------------------------------------
-// FUNCTION 3: processPhotoHashtags  (Main function — yeh call hogi)
-// ---------------------------------------------------------------
-// Kaam: Caption lo, hashtags nikalo, save karo — sab ek jagah
-//
-// Garvit apni upload API mein sirf yeh ek function call karega:
-//   await processPhotoHashtags(supabase, photoId, caption, collegeId)
-//
-// Input:
-//   - supabase:  database connection
-//   - photoId:   newly uploaded photo ka ID
-//   - caption:   "Freshers night! #Damru26 #IITD"
-//   - collegeId: college ka ID
-//
-// Output: nikale gaye hashtags ka array (logging ke liye)
-// ---------------------------------------------------------------
-
-export async function processPhotoHashtags(
+// ============================================================
+// FUNCTION: fetchPopularTags
+// ============================================================
+// Ek college ke sabse popular hashtags fetch karo
+// ============================================================
+export async function fetchPopularTags(
   supabase: any,
-  photoId: string,
-  caption: string,
-  collegeId: string
-): Promise<string[]> {
+  collegeId: string,
+  limit = 10         // Default: top 10 tags
+): Promise<TagWithCount[]> {
 
-  // Step 1: Caption se hashtags nikalo
-  const hashtags = extractHashtags(caption)
-  // Example: ["Damru26", "IITD", "NeverForget"]
+  const { data, error } = await supabase
+    .from('tags')
+    .select('id, name, usage_count')
+    // id, naam, aur usage count chahiye
+    .eq('college_id', collegeId)
+    // Sirf is college ke tags
+    .order('usage_count', { ascending: false })
+    // Most used pehle
+    .limit(limit)
+    // Sirf top N tags
 
-  console.log(`Caption se ${hashtags.length} hashtags mile:`, hashtags)
-
-  // Step 2: Database mein save karo
-  // Agar hashtags hain tabhi save karo
-  if (hashtags.length > 0) {
-    await saveHashtagsToDatabase(supabase, photoId, hashtags, collegeId)
+  if (error) {
+    console.error('Tags fetch error:', error.message)
+    return []
   }
 
-  // Step 3: Kya nikala woh return karo (Garvit log kar sakta hai)
-  return hashtags
+  return data ?? []
+}
+
+// ============================================================
+// FUNCTION: fetchTagByName
+// ============================================================
+// Ek specific tag dhundho name se (search feature ke liye)
+// ============================================================
+export async function fetchTagByName(
+  supabase: any,
+  collegeId: string,
+  tagName: string    // "Damru26" (bina #)
+): Promise<TagWithCount | null> {
+
+  const { data, error } = await supabase
+    .from('tags')
+    .select('id, name, usage_count')
+    .eq('college_id', collegeId)
+    .ilike('name', tagName)
+    // ilike = case-insensitive LIKE
+    // "damru26" likhne pe bhi "Damru26" milega
+    .maybeSingle()
+    // null if not found (error nahi)
+
+  if (error) {
+    console.error('Tag fetch error:', error.message)
+    return null
+  }
+
+  return data
 }
 ```
 
 ---
 
-## ✅ Test Karo — Kya Sahi Kaam Kar Raha Hai?
-
-### Unit test (manually browser console mein):
-
-Terminal mein yeh run karo:
-
-```bash
-# Node.js se directly test karo
-node -e "
-const { extractHashtags } = require('./lib/hashtags')
-
-// Test 1: Normal case
-const result1 = extractHashtags('Freshers night! #Damru26 #IITD #NeverForget')
-console.log('Test 1:', result1)
-// Expected: ['Damru26', 'IITD', 'NeverForget']
-
-// Test 2: No hashtags
-const result2 = extractHashtags('Simple caption without tags')
-console.log('Test 2:', result2)
-// Expected: []
-
-// Test 3: Duplicate hashtags
-const result3 = extractHashtags('#IITD best college #IITD again')
-console.log('Test 3:', result3)
-// Expected: ['IITD']  (duplicate nahi hoga)
-
-// Test 4: Empty caption
-const result4 = extractHashtags('')
-console.log('Test 4:', result4)
-// Expected: []
-"
-```
-
----
-
-## 📁 JAPINDER KI FILES (yeh sab banana hai)
+## 📁 JAPINDER KI COMPLETE FILES LIST
 
 ```
 CampusLens/
 └── lib/
-    ├── hashtags.ts         ← Caption se hashtags nikalna + save karna (tera ✅)
-    ├── validateUpload.ts   ← File type/size validation (tera ✅)
-    ├── formatDate.ts       ← Dates ko readable banana (tera ✅)
-    └── searchHelpers.ts    ← Search text clean karna (tera ✅)
-```
-
-**Yeh Garvit karega (tujhe nahi banana):**
-```
-❌ app/api/upload/route.ts          ← Garvit
-❌ app/api/cloudinary-signature/    ← Garvit
-❌ lib/supabase/                    ← Garvit
-❌ Koi bhi UI/page                  ← Keshav
+    ├── hashtags.ts       ✅ Done
+    ├── validateUpload.ts ✅ Done
+    ├── formatDate.ts     ✅ Done
+    ├── searchHelpers.ts  ✅ Done
+    ├── cloudinary.ts     ❌ BANANA HAI (Kaam 7)
+    ├── photoQueries.ts   ❌ BANANA HAI (Kaam 8)
+    └── tagQueries.ts     ❌ BANANA HAI (Kaam 9)
 ```
 
 ---
 
-## 🤝 Garvit ke saath coordination
-ae
-Garvit ki upload API mein yeh line hogi (woh likhega):
-```typescript
-import { processPhotoHashtags } from '@/lib/hashtags'
-
-// Upload hone ke baad woh call karega:
-await processPhotoHashtags(supabase, photo.id, caption, collegeId)
-```
-
-Tera kaam hai sirf `lib/hashtags.ts` ready rakhna.
-
----
-
-## 🔄 Git — Roz karo
+## 🔄 Git Workflow
 
 ```bash
-# Latest code lo
 git pull origin main
-
-# Apni branch pe switch karo
 git checkout japinder-hashtag-logic
 
-# Kaam karo...
+# Teen files banao
+# lib/cloudinary.ts
+# lib/photoQueries.ts
+# lib/tagQueries.ts
 
-# Save karo
-git add lib/hashtags.ts
-git commit -m "hashtags: extractHashtags function ready"
-
-# Push karo
+git add lib/cloudinary.ts lib/photoQueries.ts lib/tagQueries.ts
+git commit -m "Add cloudinary upload helper, photo queries, tag queries"
 git push origin japinder-hashtag-logic
 ```
 
 ---
 
-## ✅ CHECKLIST
+## ✅ UPDATED CHECKLIST
 
 ```
-[ ] lib/hashtags.ts file bani
-[ ] extractHashtags() sahi se hashtags nikaal raha hai
-[ ] Duplicate hashtags nahi aa rahe
-[ ] Empty caption pe empty array aata hai
-[ ] saveHashtagsToDatabase() likha
-[ ] processPhotoHashtags() (main function) ready
-[ ] lib/validateUpload.ts file bani
-[ ] File type check kaam kar raha hai
-[ ] File size check kaam kar raha hai
-[ ] lib/formatDate.ts file bani
-[ ] formatDate() sahi output de raha hai
-[ ] timeAgo() sahi output de raha hai
-[ ] lib/searchHelpers.ts file bani
-[ ] cleanSearchQuery() # remove kar raha hai
-[ ] Garvit ko bataya ki files ready hain
+[✅] lib/hashtags.ts
+[✅] lib/validateUpload.ts
+[✅] lib/formatDate.ts
+[✅] lib/searchHelpers.ts
+[ ] lib/cloudinary.ts — uploadToCloudinary() function
+[ ] lib/photoQueries.ts — fetchPhotos() aur fetchPhotoById()
+[ ] lib/tagQueries.ts — fetchPopularTags() aur fetchTagByName()
+[ ] Garvit ko batao jab teeno ready ho jayein
 ```
