@@ -23,12 +23,10 @@ export default function LoginPage() {
     } else {
       setCollegeId(saved);
     }
-    // URL mein error hai? (jaise expired link)
     const params = new URLSearchParams(window.location.search);
     const urlError = params.get("error");
-    const errorCode = params.get("error_code");
     if (urlError) {
-      setErrorMessage(`${urlError}${errorCode ? ` (${errorCode})` : ''}. Please request a new one.`);
+      setErrorMessage("Link expired. Please request a new magic link.");
     }
   }, [router]);
 
@@ -56,21 +54,24 @@ export default function LoginPage() {
     setIsSending(true);
     try {
       const supabase = createClient();
-      console.log('Sending OTP to:', email.trim().toLowerCase());
-      const { error: authError, data } = await supabase.auth.signInWithOtp({
+
+      // OTP email bhejo — user 6-digit code type karega
+      // Yeh PKCE problem se free hai
+      const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
+          // Naya user bhi create ho sakta hai
         },
       });
-      console.log('signInWithOtp result:', { error: authError, data });
+
       if (authError) {
         setErrorMessage(`Error: ${authError.message}`);
         return;
       }
       setEmailSent(true);
     } catch (err) {
-      console.error('signInWithOtp exception:', err);
+      console.error(err);
       setErrorMessage("Network error. Check your connection.");
     } finally {
       setIsSending(false);
@@ -84,22 +85,14 @@ export default function LoginPage() {
 
   const collegeIndex = colleges.findIndex((c) => c.id === college.id);
 
+  // OTP entry screen
   if (emailSent) {
     return (
-      <div className="mx-auto max-w-md px-6 py-32 text-center">
-        <p className="rubber-stamp -rotate-3 text-teal text-2xl">Sent!</p>
-        <h1 className="mt-8 font-serif text-4xl">Check your email.</h1>
-        <p className="mt-4 text-muted">
-          We sent a magic link to <strong>{email}</strong>.
-          <br />Click the link in the email to sign in.
-        </p>
-        <p className="mt-8 text-xs text-muted">
-          Didn&apos;t get it? Check spam, or{" "}
-          <button type="button" onClick={() => setEmailSent(false)} className="underline hover:text-ink">
-            try again
-          </button>.
-        </p>
-      </div>
+      <OtpScreen
+        email={email}
+        onBack={() => setEmailSent(false)}
+        onSuccess={() => router.replace("/onboarding")}
+      />
     );
   }
 
@@ -112,7 +105,7 @@ export default function LoginPage() {
         <p className="label">Step 2 of 3 · Sign in</p>
         <h1 className="font-serif text-5xl leading-tight">Welcome back to {college.name}.</h1>
         <p className="mt-4 text-sm text-muted">
-          Use your college email — we&apos;ll send you a magic link.
+          Use your college email — we&apos;ll send you a one-time code.
         </p>
         <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
           <div>
@@ -131,13 +124,114 @@ export default function LoginPage() {
             )}
           </div>
           <button type="submit" disabled={isSending} className="btn w-full">
-            {isSending ? "Sending…" : "Send magic link"}
+            {isSending ? "Sending…" : "Send code"}
           </button>
         </form>
-        <button type="button" onClick={handleChangeSchool} className="mt-6 text-sm text-muted underline underline-offset-4 hover:text-ink">
+        <button
+          type="button"
+          onClick={handleChangeSchool}
+          className="mt-6 text-sm text-muted underline underline-offset-4 hover:text-ink"
+        >
           Not your school? Change it
         </button>
       </div>
+    </div>
+  );
+}
+
+
+// OTP verification component
+function OtpScreen({
+  email,
+  onBack,
+  onSuccess,
+}: {
+  email: string;
+  onBack: () => void;
+  onSuccess: () => void;
+}) {
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (otp.trim().length < 6) {
+      setError("Please enter the 6-digit code.");
+      return;
+    }
+
+    setIsVerifying(true);
+    setError("");
+
+    try {
+      const supabase = createClient();
+
+      // OTP verify karo — PKCE nahi, direct verify
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otp.trim(),
+        type: "email",
+        // type: "email" = email OTP verify karo
+      });
+
+      if (verifyError) {
+        setError(`Invalid code: ${verifyError.message}`);
+        return;
+      }
+
+      // Success — onboarding pe jao
+      onSuccess();
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-md px-6 py-24">
+      <p className="label">Step 2 of 3 · Verify</p>
+      <h1 className="font-serif text-4xl">Enter your code.</h1>
+      <p className="mt-3 text-sm text-muted">
+        We sent a 6-digit code to <strong>{email}</strong>.
+        <br />Check your inbox (and spam folder).
+      </p>
+
+      <form onSubmit={handleVerify} noValidate className="mt-8 space-y-5">
+        <div>
+          <label htmlFor="otp" className="label">6-digit code</label>
+          <input
+            id="otp"
+            type="text"
+            inputMode="numeric"
+            // inputMode="numeric" → mobile pe number keyboard khulega
+            maxLength={8}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+            // /\D/g = non-digits remove karo (sirf numbers allow)
+            placeholder="123456"
+            className="field text-2xl tracking-widest"
+            autoFocus
+          />
+          {error && (
+            <p className="mt-2 text-xs font-bold text-rust" role="alert">{error}</p>
+          )}
+        </div>
+
+        <button type="submit" disabled={isVerifying} className="btn w-full">
+          {isVerifying ? "Verifying…" : "Verify"}
+        </button>
+      </form>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-4 text-sm text-muted underline underline-offset-4 hover:text-ink"
+      >
+        Use a different email
+      </button>
     </div>
   );
 }
