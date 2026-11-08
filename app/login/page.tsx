@@ -56,21 +56,22 @@ export default function LoginPage() {
     setIsSending(true);
     try {
       const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithOtp({
+      console.log('Sending OTP to:', email.trim().toLowerCase());
+      const { error: authError, data } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          // Must match the callback route exactly
         },
       });
+      console.log('signInWithOtp result:', { error: authError, data });
       if (authError) {
         setErrorMessage(`Error: ${authError.message}`);
         return;
       }
       setEmailSent(true);
     } catch (err) {
+      console.error('signInWithOtp exception:', err);
       setErrorMessage("Network error. Check your connection.");
-      console.error(err);
     } finally {
       setIsSending(false);
     }
