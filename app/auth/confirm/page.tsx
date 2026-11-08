@@ -10,38 +10,42 @@ export default function ConfirmPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    async function handle() {
-      const supabase = createClient()
-      const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
+    const supabase = createClient()
+    let done = false
 
-      if (code) {
-        // PKCE: code exchange browser mein karo
-        // localStorage mein code_verifier available hai
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-
-        if (error) {
-          console.error('Exchange error:', error.message)
-          setError('Sign in failed: ' + error.message)
-          return
-        }
-
-        console.log('Session created:', data.session?.user?.email)
+    function redirect() {
+      if (!done) {
+        done = true
         router.replace('/onboarding')
-        return
       }
-
-      // Koi code nahi — already session hai?
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        router.replace('/onboarding')
-        return
-      }
-
-      setError('No login token found. Please try signing in again.')
     }
 
-    handle()
+    // Implicit flow: Supabase client automatically hash se
+    // access_token detect karta hai aur session set karta hai
+    // onAuthStateChange mein SIGNED_IN event fire hoga
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Confirm event:', event, !!session)
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        redirect()
+      }
+    })
+
+    // Already session hai? (refresh case)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) redirect()
+    })
+
+    // 10 second timeout
+    const timer = setTimeout(() => {
+      if (!done) {
+        setError('Sign in timed out. Please try again.')
+      }
+    }, 10000)
+
+    return () => {
+      clearTimeout(timer)
+      subscription.unsubscribe()
+    }
   }, [router])
 
   if (error) {
