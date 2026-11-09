@@ -11,48 +11,31 @@ export default function ConfirmPage() {
 
   useEffect(() => {
     async function handle() {
-      const supabase = createClient()
-
-      // URL se code nikalo — Google OAuth PKCE code bhejta hai
+      // Google/Supabase ne error bheja ho (e.g. access_denied)
       const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
-
-      console.log('Confirm page code:', code ? 'found' : 'not found')
-      console.log('Confirm page hash:', window.location.hash ? 'has hash' : 'no hash')
-
-      if (code) {
-        // PKCE: code exchange karo session ke liye
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        console.log('Exchange result:', !!data.session, exchangeError?.message)
-
-        if (exchangeError) {
-          setError('Sign in failed: ' + exchangeError.message)
-          return
-        }
-
-        if (data.session) {
-          router.replace('/onboarding')
-          return
-        }
-      }
-
-      // Hash mein token check karo (implicit flow fallback)
-      const hash = window.location.hash
-      if (hash && hash.includes('access_token')) {
-        // onAuthStateChange handle karega
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          console.log('Auth event:', event, !!session)
-          if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-            subscription.unsubscribe()
-            router.replace('/onboarding')
-          }
-        })
-        setTimeout(() => setError('Sign in timed out.'), 10000)
+      const hashParams = new URLSearchParams(window.location.hash.slice(1))
+      const urlError =
+        params.get('error_description') ?? hashParams.get('error_description')
+      if (urlError) {
+        setError(urlError)
         return
       }
 
-      // Koi token nahi
-      setError('No login token found. Please try again.')
+      // IMPORTANT: code ko manually exchange MAT karo.
+      // @supabase/ssr ka browser client hamesha PKCE use karta hai aur
+      // detectSessionInUrl=true hai, toh client init hote hi woh ?code= ko
+      // khud exchange kar leta hai aur code_verifier delete kar deta hai.
+      // Doosri baar exchangeCodeForSession call karne se error aata tha.
+      // getSession() init (aur us auto-exchange) ke complete hone ka wait karta hai.
+      const supabase = createClient()
+      const { data, error: sessionError } = await supabase.auth.getSession()
+
+      if (data.session) {
+        router.replace('/onboarding')
+        return
+      }
+
+      setError(sessionError?.message ?? 'No login session found. Please try again.')
     }
 
     handle()
@@ -63,7 +46,7 @@ export default function ConfirmPage() {
       <div className="mx-auto max-w-sm px-6 py-32 text-center">
         <h1 className="font-serif text-4xl">Sign in failed</h1>
         <p className="mt-3 text-sm text-muted">{error}</p>
-        <a href="/" className="btn mt-8 inline-block">Try again</a>
+        <a href="/login" className="btn mt-8 inline-block">Try again</a>
       </div>
     )
   }

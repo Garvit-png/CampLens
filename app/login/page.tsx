@@ -52,11 +52,9 @@ export default function LoginPage() {
           // wahan session set hoga → /onboarding pe jaayenge
 
           queryParams: {
-            hd: college!.emailDomains[0].split(".").slice(-2).join("."),
+            hd: college!.emailDomains[0],
+            // hd = Google Workspace domain hint (poora domain, e.g. rishihood.edu.in)
             prompt: "select_account",
-            response_type: "token",
-            // response_type: token → force implicit flow
-            // Supabase PKCE ki jagah seedha token return karega
           },
         },
       });
