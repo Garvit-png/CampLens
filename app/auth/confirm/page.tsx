@@ -10,41 +10,52 @@ export default function ConfirmPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    // Debug: URL mein kya hai
-    console.log('Confirm page URL:', window.location.href)
-    console.log('Hash:', window.location.hash)
+    async function handle() {
+      const supabase = createClient()
 
-    const supabase = createClient()
-    let done = false
+      // URL se code nikalo — Google OAuth PKCE code bhejta hai
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
 
-    function redirect() {
-      if (!done) {
-        done = true
-        router.replace('/onboarding')
+      console.log('Confirm page code:', code ? 'found' : 'not found')
+      console.log('Confirm page hash:', window.location.hash ? 'has hash' : 'no hash')
+
+      if (code) {
+        // PKCE: code exchange karo session ke liye
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        console.log('Exchange result:', !!data.session, exchangeError?.message)
+
+        if (exchangeError) {
+          setError('Sign in failed: ' + exchangeError.message)
+          return
+        }
+
+        if (data.session) {
+          router.replace('/onboarding')
+          return
+        }
       }
+
+      // Hash mein token check karo (implicit flow fallback)
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        // onAuthStateChange handle karega
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth event:', event, !!session)
+          if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+            subscription.unsubscribe()
+            router.replace('/onboarding')
+          }
+        })
+        setTimeout(() => setError('Sign in timed out.'), 10000)
+        return
+      }
+
+      // Koi token nahi
+      setError('No login token found. Please try again.')
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Confirm event:', event, !!session)
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-        redirect()
-      }
-    })
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) redirect()
-    })
-
-    const timer = setTimeout(() => {
-      if (!done) {
-        setError('Sign in timed out. Please try again.')
-      }
-    }, 10000)
-
-    return () => {
-      clearTimeout(timer)
-      subscription.unsubscribe()
-    }
+    handle()
   }, [router])
 
   if (error) {

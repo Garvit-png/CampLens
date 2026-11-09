@@ -6,7 +6,10 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        flowType: 'implicit',
+        flowType: 'pkce',
+        // Google OAuth ?code= bhej raha hai — PKCE flow hai
+        // exchangeCodeForSession() browser mein call hogi
+        // code_verifier browser localStorage/cookies mein hoga
         detectSessionInUrl: true,
       }
     }
