@@ -47,7 +47,7 @@ export default function LoginPage() {
         // Koi PKCE/OTP issue nahi — seedha Google pe jao → callback pe wapas aao
 
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/confirm`,
           // Login ke baad /auth/callback pe redirect hoga
           // wahan session set hoga → /onboarding pe jaayenge
 
