@@ -20,27 +20,22 @@ export default function ConfirmPage() {
       }
     }
 
-    // Har auth event handle karo
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Confirm event:', event, !!session)
-
-      if (session && (
-        event === 'SIGNED_IN' ||
-        event === 'TOKEN_REFRESHED' ||
-        event === 'INITIAL_SESSION'
-        // INITIAL_SESSION = page load pe existing session
-        // Agar user pehle se logged in hai → seedha redirect
-      )) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
         redirect()
       }
     })
 
-    // Timeout thoda zyada rakho — Google redirect time leta hai
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) redirect()
+    })
+
     const timer = setTimeout(() => {
       if (!done) {
         setError('Sign in timed out. Please try again.')
       }
-    }, 15000)
+    }, 10000)
 
     return () => {
       clearTimeout(timer)

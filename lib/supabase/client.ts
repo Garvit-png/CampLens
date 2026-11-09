@@ -8,9 +8,6 @@ export function createClient() {
       auth: {
         flowType: 'implicit',
         detectSessionInUrl: true,
-        // detectSessionInUrl: URL hash se token detect karo
-        // Google OAuth ke baad hash mein token aata hai
-        // Supabase automatically parse karta hai
       }
     }
   )
