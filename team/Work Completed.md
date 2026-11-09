@@ -1,6 +1,6 @@
 # ✅ Work Completed — CampusLens
-> Last Updated: November 2026
-> Overall Project Progress: **~75%**
+> Last Updated: 9 November 2026
+> Overall Project Progress: **~85%**
 
 ---
 
@@ -8,10 +8,10 @@
 
 | Member | Total Kaam | Done | Pending | Progress |
 |--------|-----------|------|---------|----------|
-| **Garvit** 👑 | 33 tasks | 32 | 1 | **🟢 97%** |
+| **Garvit** 👑 | 37 tasks | 36 | 1 | **🟢 97%** |
 | **Japinder** 📸 | 10 tasks | 7 | 3 | **🟡 57%** |
 | **Vansh** 🔍 | 6 tasks | 3 | 3 | **🔴 50%** |
-| **Keshav** 🎨 | 5 tasks | 2 | 3 | **🔴 30%** |
+| **Keshav** 🎨 | 5 tasks | 3 | 2 | **🟡 60%** |
 
 ---
 
@@ -47,15 +47,19 @@
 | 26 | Vercel deployment + env variables | vercel.com | ✅ Done |
 | 27 | Supabase DB schema (7 tables + RLS) | `supabase/schema.sql` | ✅ Done |
 | 28 | Google OAuth — working end to end | Auth flow complete | ✅ Done |
-| 29 | Real photo upload → Cloudinary → Supabase | `app/(main)/upload/page.tsx`, `app/api/photos/route.ts` | ✅ Done (migration 002 run karna hai) |
+| 29 | Real photo upload → Cloudinary → Supabase | `app/(main)/upload/page.tsx`, `app/api/photos/route.ts` | ✅ Done |
 | 30 | Cloudinary signature API route | `app/api/cloudinary-signature/route.ts` | ✅ Done |
 | 31 | Gallery → real Supabase DB photos + events | `lib/session.tsx`, `components/GalleryView.tsx` | ✅ Done |
 | 32 | Profile → real DB data (uploader_id se match) | `app/(main)/profile/page.tsx` | ✅ Done |
-| 33 | Missing RLS policies (events/tags/photo_tags insert, same-college profiles) | `supabase/migrations/002_upload_gallery_policies.sql` | ⚠️ SQL Editor mein run karna hai |
+| 34 | Landing + login → real DB colleges (mock colleges hataye) | `lib/collegeQueries.ts`, `app/page.tsx`, `app/login/page.tsx` | ✅ Done |
+| 35 | Navbar merge (Keshav design + session logic) | `components/Navbar.tsx` | ✅ Done |
+| 36 | Favicon fix (square, bada logo) | `app/icon.png`, `app/apple-icon.png` | ✅ Done |
+| 37 | Live end-to-end test (login → upload → gallery → search → profile) | camp-lens.vercel.app | ⏳ Testing baaki |
+| 33 | Missing RLS policies (events/tags/photo_tags insert, same-college profiles) | `supabase/migrations/002_upload_gallery_policies.sql` | ✅ Done (Supabase pe run ho gaya) |
 
 ---
 
-## 📸 JAPINDER — 57% Complete
+## 📸 JAPINDER — 57% Completed
 
 | # | Kaam | File | Status |
 |---|------|------|--------|
@@ -84,7 +88,7 @@
 
 ---
 
-## 🎨 KESHAV — 30% Complete
+## 🎨 KESHAV — 60% Complete
 
 | # | Kaam | File | Status |
 |---|------|------|--------|
@@ -92,7 +96,7 @@
 | 2 | Kaam division clearly | `team/TEAM_README.md` | ✅ Done |
 | 3 | Landing page design improve | `app/page.tsx` | ❌ Pending |
 | 4 | Profile page UI improve | `app/(main)/profile/page.tsx` | ❌ Pending |
-| 5 | Navbar design improve | `components/Navbar.tsx` | ❌ Pending |
+| 5 | Navbar design improve | `components/Navbar.tsx` | ✅ Done (merged) |
 
 ---
 
@@ -103,10 +107,10 @@
 | Stage 1 — Setup | Next.js, TypeScript, Tailwind, Vercel | ✅ 100% |
 | Stage 2 — Database | 7 tables, RLS policies, sample data | ✅ 100% |
 | Stage 3 — Auth | **Google OAuth working end-to-end** | ✅ 100% |
-| Stage 4 — Profiles | Onboarding + domain validation working | ✅ 90% |
-| Stage 5 — Upload | UI ready, Cloudinary pending | ⚠️ 40% |
-| Stage 6 — Gallery & Search | UI + filters (mock data), real DB pending | ⚠️ 50% |
-| Stage 7 — Testing & Deploy | Vercel live, auth complete | ⚠️ 60% |
+| Stage 4 — Profiles | Onboarding + domain validation + real profile data | ✅ 100% |
+| Stage 5 — Upload | Cloudinary + Supabase save + RLS policies | ✅ 95% (live test baaki) |
+| Stage 6 — Gallery & Search | Gallery + events real DB se; Search API (Vansh) abhi mock | ⚠️ 80% |
+| Stage 7 — Testing & Deploy | Vercel live, auth complete, end-to-end test baaki | ⚠️ 75% |
 
 ---
 
@@ -116,9 +120,9 @@
 ✅ Google OAuth login (college email only)
 ✅ Domain validation (non-college emails blocked)
 ✅ Onboarding (naam + batch)
-✅ Gallery with mock data + filters
+✅ Gallery with real DB photos + event filters
 ✅ Photo detail page
-✅ Upload page UI
+✅ Real photo upload (Cloudinary → Supabase)
 ✅ Profile page
 ✅ Sign out
 ✅ Error + 404 pages
@@ -130,8 +134,7 @@
 
 | Priority | Kaam | Kaun | Details |
 |----------|------|------|---------|
-| 🔴 1 | Migration 002 Supabase SQL Editor mein run karo | **Garvit** | `supabase/migrations/002_upload_gallery_policies.sql` |
-| 🔴 2 | Live pe upload end-to-end test karo | **Garvit** | Upload → gallery → profile mein dikhe |
+| 🔴 1 | Live pe end-to-end test karo | **Garvit** | Login → upload → gallery → search → profile |
 | 🟡 4 | Cloudinary upload helper | **Japinder** | `lib/cloudinary.ts` |
 | 🟡 5 | Photo + Tag queries | **Japinder** | `lib/photoQueries.ts`, `lib/tagQueries.ts` |
 | 🟡 6 | Search API real query | **Vansh** | Supabase se hashtag search |

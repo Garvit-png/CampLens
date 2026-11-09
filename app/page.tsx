@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import CollegeStamp from "@/components/CollegeStamp";
 import Developing from "@/components/Developing";
 import Postmark from "@/components/Postmark";
-import { colleges } from "@/lib/mockData";
+import { fetchColleges } from "@/lib/collegeQueries";
+import { createClient } from "@/lib/supabase/client";
+import type { College } from "@/types";
 import { useSession } from "@/lib/session";
 
 export default function SelectSchoolPage() {
@@ -13,6 +15,19 @@ export default function SelectSchoolPage() {
   const router = useRouter();
   const [searchText, setSearchText] = useState("");
   const [domainError, setDomainError] = useState("");
+  const [colleges, setColleges] = useState<College[] | null>(null);
+  // null = abhi load ho rahe hain
+
+  // Colleges database se lo (pehle mockData se aate the)
+  useEffect(() => {
+    let cancelled = false;
+    fetchColleges(createClient()).then((list) => {
+      if (!cancelled) setColleges(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isAlreadySignedIn = isReady && Boolean(supabaseUser) && Boolean(profile?.is_onboarding_complete);
 
@@ -43,7 +58,7 @@ export default function SelectSchoolPage() {
     if (isAlreadySignedIn) router.replace("/gallery");
   }, [isAlreadySignedIn, router]);
 
-  if (!isReady || isAlreadySignedIn) return <Developing />;
+  if (!isReady || isAlreadySignedIn || colleges === null) return <Developing />;
 
   const query = searchText.trim().toLowerCase();
   const visibleColleges = colleges.filter(

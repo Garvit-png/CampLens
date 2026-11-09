@@ -4,35 +4,46 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CollegeStamp from "@/components/CollegeStamp";
 import Developing from "@/components/Developing";
-import { getCollege } from "@/lib/helpers";
-import { colleges } from "@/lib/mockData";
+import { fetchCollegeById } from "@/lib/collegeQueries";
 import { createClient } from "@/lib/supabase/client";
+import type { College } from "@/types";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [collegeId, setCollegeId] = useState<string | null>(null);
+  const [college, setCollege] = useState<College | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    // URL mein error hai?
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error")) {
+      setErrorMessage("Sign in failed. Please try again.");
+    }
+
     const saved = localStorage.getItem("selected_college_id");
     if (!saved) {
       router.replace("/");
-    } else {
-      setCollegeId(saved);
+      return;
     }
-    // URL mein error hai?
-    const params = new URLSearchParams(window.location.search);
-    const urlError = params.get("error");
-    if (urlError) {
-      setErrorMessage("Sign in failed. Please try again.");
-    }
+
+    // College database se lo. Nahi mila (e.g. purana mock ID "rishihood") → wapas select page
+    fetchCollegeById(createClient(), saved).then((found) => {
+      if (!found) {
+        localStorage.removeItem("selected_college_id");
+        router.replace("/");
+      } else {
+        setCollege(found);
+      }
+    });
   }, [router]);
 
-  const college = getCollege(collegeId ?? "");
-  if (!collegeId || !college) return <Developing />;
+  if (!college) return <Developing />;
 
-  const collegeIndex = colleges.findIndex((c) => c.id === college.id);
+  // Stamp ka color/tilt — ID se stable number (pehle mock array ka index tha)
+  const collegeIndex = [...college.id].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 4;
+
+  const domains = college.emailDomains;
 
   async function handleGoogleLogin() {
     setIsLoading(true);
@@ -52,8 +63,10 @@ export default function LoginPage() {
           // wahan session set hoga → /onboarding pe jaayenge
 
           queryParams: {
-            hd: college!.emailDomains[0],
-            // hd = Google Workspace domain hint (poora domain, e.g. rishihood.edu.in)
+            // hd = Google Workspace domain hint — sirf tab jab college ka ek hi domain ho.
+            // Multiple domains (e.g. rishihood.edu.in + nst.rishihood.edu.in) → hd mat bhejo,
+            // warna doosre domain wale students block ho jaate. Asli check onboarding mein hota hai.
+            ...(domains.length === 1 ? { hd: domains[0] } : {}),
             prompt: "select_account",
           },
         },
@@ -119,7 +132,7 @@ export default function LoginPage() {
         </button>
 
         <p className="mt-4 text-xs text-muted text-center">
-          Use your <strong>{college.emailDomains[0]}</strong> Google account
+          Use your <strong>{college.emailDomains.join(" / ") || "college"}</strong> Google account
         </p>
 
         <button

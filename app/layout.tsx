@@ -88,11 +88,8 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "CampusLens",
   description: "A shared archive of college memories.",
-  icons: {
-    icon: "/favicon-32.png",
-    apple: "/apple-touch-icon.png",
-    shortcut: "/favicon-32.png",
-  },
+  // Favicon: app/icon.png (512x512 square logo) + app/apple-icon.png (180x180)
+  // Next.js inhe file convention se khud <link> tags mein daal deta hai.
 };
 
 
