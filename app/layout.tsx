@@ -87,9 +87,12 @@ const caveat = Caveat({
 // ----------------------------------------------------------
 export const metadata: Metadata = {
   title: "CampusLens",
-  // Browser tab mein yeh naam dikhega
   description: "A shared archive of college memories.",
-  // Google search results mein yeh description dikhegi
+  icons: {
+    icon: "/favicon-32.png",
+    apple: "/apple-touch-icon.png",
+    shortcut: "/favicon-32.png",
+  },
 };
 
 
