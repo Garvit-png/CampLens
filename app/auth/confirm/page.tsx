@@ -10,6 +10,10 @@ export default function ConfirmPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // Debug: URL mein kya hai
+    console.log('Confirm page URL:', window.location.href)
+    console.log('Hash:', window.location.hash)
+
     const supabase = createClient()
     let done = false
 
