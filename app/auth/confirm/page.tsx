@@ -20,27 +20,27 @@ export default function ConfirmPage() {
       }
     }
 
-    // Implicit flow: Supabase client automatically hash se
-    // access_token detect karta hai aur session set karta hai
-    // onAuthStateChange mein SIGNED_IN event fire hoga
+    // Har auth event handle karo
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Confirm event:', event, !!session)
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+
+      if (session && (
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'INITIAL_SESSION'
+        // INITIAL_SESSION = page load pe existing session
+        // Agar user pehle se logged in hai → seedha redirect
+      )) {
         redirect()
       }
     })
 
-    // Already session hai? (refresh case)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) redirect()
-    })
-
-    // 10 second timeout
+    // Timeout thoda zyada rakho — Google redirect time leta hai
     const timer = setTimeout(() => {
       if (!done) {
         setError('Sign in timed out. Please try again.')
       }
-    }, 10000)
+    }, 15000)
 
     return () => {
       clearTimeout(timer)
