@@ -87,6 +87,7 @@ export async function saveHashtagsToDatabase(
             .from("tags")                    // tags table
             .select("id, usage_count")       // sirf yeh do columns chahiye
             .eq("name", tagName)             // jahan name = tagName
+            .eq("college_id", collegeId)     // tags college-wise unique hain (UNIQUE(college_id, name))
             .maybeSingle();
             // maybeSingle() → ek row return karo, agar nahi mila to null (error nahi)
 
@@ -107,7 +108,7 @@ export async function saveHashtagsToDatabase(
 
         } else {
             // --- STEP C: Tag naya hai → database mein insert karo ---
-            const { data: newTag } = await supabase
+            const { data: newTag, error: insertError } = await supabase
                 .from("tags")
                 .insert({
                     name: tagName,          // "Damru26"
@@ -118,6 +119,10 @@ export async function saveHashtagsToDatabase(
                 .single();
                 // single() → ek hi row insert hui, uska ID chahiye
 
+            if (insertError || !newTag) {
+                console.error("Tag insert failed:", tagName, insertError?.message);
+                continue; // is tag ko skip karo, baaki tags save karte raho
+            }
             tagId = newTag.id;
             // Naye tag ka ID save karo
         }
@@ -130,7 +135,7 @@ export async function saveHashtagsToDatabase(
                     photo_id: photoId,       // kaunsi photo
                     tag_id: tagId,           // kaunsa tag
                 },
-                { onConflict: "photo_id,tag_id" }
+                { onConflict: "photo_id,tag_id", ignoreDuplicates: true }
                 // onConflict → agar yeh combination pehle se hai toh error mat do
                 // (duplicate photo-tag link prevent karo)
             );

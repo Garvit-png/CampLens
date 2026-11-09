@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Photo } from "@/types";
+import type { CampusEvent, Photo } from "@/types";
 
 interface SessionValue {
   isReady: boolean;
@@ -10,6 +10,8 @@ interface SessionValue {
   profile: any | null;
   collegeId: string | null;
   collegePhotos: Photo[];
+  collegeEvents: CampusEvent[];
+  college: { id: string; name: string; city: string } | null;
   addPhotos: (newPhotos: Photo[]) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -23,6 +25,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [collegePhotos, setCollegePhotos] = useState<Photo[]>([]);
+  const [collegeEvents, setCollegeEvents] = useState<CampusEvent[]>([]);
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -41,7 +44,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         uploaded_at,
         event_id,
         college_id,
-        profiles ( full_name )
+        uploader_id,
+        profiles ( full_name ),
+        events ( name )
       `)
       .eq("college_id", collegeId)
       .eq("is_approved", true)
@@ -64,15 +69,41 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       year: p.year ?? new Date().getFullYear(),
       uploaderName: p.profiles?.full_name ?? "Unknown",
       uploadedAt: p.uploaded_at?.slice(0, 10) ?? "",
+      uploaderId: p.uploader_id,
+      eventName: p.events?.name ?? undefined,
+      thumbnailUrl: p.thumbnail_url ?? undefined,
     }));
 
     setCollegePhotos(photos);
   }
 
+  // College ke saare events (gallery filter dropdown ke liye)
+  async function loadEvents(collegeId: string) {
+    const { data, error } = await supabase
+      .from("events")
+      .select("id, college_id, name, year")
+      .eq("college_id", collegeId)
+      .order("year", { ascending: false });
+
+    if (error) {
+      console.error("Events load error:", error.message);
+      return;
+    }
+
+    setCollegeEvents(
+      (data ?? []).map((e: { id: string; college_id: string; name: string; year: number }) => ({
+        id: e.id,
+        collegeId: e.college_id,
+        name: e.name,
+        year: e.year,
+      }))
+    );
+  }
+
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
       .from("profiles")
-      .select("*, colleges(name, id)")
+      .select("*, colleges(name, id, city)")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) console.error("Profile load error:", error.message);
@@ -80,7 +111,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     // Profile milte hi photos load karo
     if (data?.college_id) {
-      await loadPhotos(data.college_id);
+      await Promise.all([loadPhotos(data.college_id), loadEvents(data.college_id)]);
     }
   }
 
@@ -98,6 +129,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setSupabaseUser(null);
           setProfile(null);
           setCollegePhotos([]);
+          setCollegeEvents([]);
         }
 
         if (event === "INITIAL_SESSION") {
@@ -118,7 +150,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // Upload ke baad photos reload karo
   async function reloadPhotos() {
-    if (profile?.college_id) await loadPhotos(profile.college_id);
+    if (profile?.college_id) {
+      await Promise.all([loadPhotos(profile.college_id), loadEvents(profile.college_id)]);
+    }
   }
 
   // addPhotos: Optimistic update — DB pe bhi save hota hai via API
@@ -131,14 +165,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setSupabaseUser(null);
     setProfile(null);
     setCollegePhotos([]);
+    setCollegeEvents([]);
   }
 
   const collegeId = profile?.college_id ?? null;
+  const college = profile?.colleges
+    ? {
+        id: profile.colleges.id as string,
+        name: (profile.colleges.name as string) ?? "",
+        city: (profile.colleges.city as string) ?? "",
+      }
+    : null;
 
   return (
     <SessionContext.Provider value={{
       isReady, supabaseUser, profile, collegeId,
-      collegePhotos, addPhotos, signOut, refreshProfile, reloadPhotos,
+      collegePhotos, collegeEvents, college, addPhotos, signOut, refreshProfile, reloadPhotos,
     }}>
       {children}
     </SessionContext.Provider>

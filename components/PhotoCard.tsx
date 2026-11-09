@@ -15,6 +15,7 @@
 import Link from "next/link";
 
 import { filmDate, getEventName } from "@/lib/helpers";
+// getEventName → sirf mock photos ke liye fallback; real photos mein eventName DB se aata hai
 // filmDate    → "'26 3 15" (film camera date stamp)
 // getEventName → event ID se event ka naam
 
@@ -68,16 +69,15 @@ export default function PhotoCard({ photo, index }: PhotoCardProps) {
           {/* bg-ink/10 → placeholder background (image load hone tak) */}
 
           <img
-            src={photo.imageUrl}
+            src={photo.thumbnailUrl ?? photo.imageUrl}
+            // thumbnailUrl → Cloudinary ka 400x400 version (grid ke liye fast)
             alt={photo.caption}
             loading="lazy"
             // lazy → jab tak scroll karke yahan nahi aate, image load nahi hogi
             // Performance: 50 photos ek saath load nahi honge
-            className="h-full w-full object-cover contrast-105 sepia-30 transition duration-500 group-hover:sepia-0"
+            className="h-full w-full object-cover"
             // object-cover → image ko crop karke square fill karo
-            // contrast-105 → thoda zyada contrast (vintage feel)
-            // sepia-30 → 30% sepia tint (old photo look)
-            // group-hover:sepia-0 → hover pe sepia hatao (color photo dikhe)
+            // Koi tint/filter nahi — photo hamesha original colors mein, hover pe bhi same
           />
 
           {/* Date stamp (film camera style) */}
@@ -96,7 +96,7 @@ export default function PhotoCard({ photo, index }: PhotoCardProps) {
 
         {/* Event name (small uppercase text) */}
         <p className="mt-1.5 truncate text-[11px] uppercase tracking-widest text-muted">
-          {getEventName(photo.eventId)}
+          {photo.eventName ?? getEventName(photo.eventId)}
           {/* Event ID → event naam ("Damru 2026") */}
         </p>
       </div>

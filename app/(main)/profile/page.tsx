@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const collegeName = (profile.colleges as { name?: string } | null)?.name ?? "";
 
   const myPhotos = sortNewestFirst(
-    collegePhotos.filter((p) => p.uploaderName === fullName)
+    collegePhotos.filter((p) => p.uploaderId === profile.id)
   );
 
   async function handleSignOut() {

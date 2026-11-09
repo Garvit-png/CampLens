@@ -145,6 +145,15 @@ export interface Photo {
   // Kab upload hua — "YYYY-MM-DD" format mein
   // Example: "2026-03-15"
   // string type isliye kyunki Date objects tricky hote hain
+
+  uploaderId?: string;
+  // Real DB: profiles.id (uploader_id) — profile page pe "meri photos" match karne ke liye
+
+  eventName?: string;
+  // Real DB: events table se join karke aata hai ("Damru 2026")
+
+  thumbnailUrl?: string;
+  // Real DB: Cloudinary ka chhota 400x400 version — gallery grid ke liye (fast load)
   // formatDate() helper se readable banate hain
 }
 

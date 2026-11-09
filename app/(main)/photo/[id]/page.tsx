@@ -124,7 +124,7 @@ export default function PhotoDetailPage() {
 
           <p className="label">On the back of this print</p>
           <h1 className="font-serif text-3xl leading-tight">
-            {getEventName(photo.eventId)}
+            {photo.eventName ?? getEventName(photo.eventId)}
             {/* Event ID → event naam ("Damru 2026") */}
           </h1>
 

@@ -25,11 +25,7 @@ import {
 
   filterPhotos,
   // Teen filters ek saath: year, event, search
-
-  getCollege,
   // College ID → College object (naam + city ke liye)
-
-  getEventsForCollege,
   // College ke events list (event filter dropdown ke liye)
 
   getPopularTags,
@@ -51,11 +47,12 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
   // initialSearch → URL se aaya tag (jaise "?tag=Damru26")
   // Gallery page se yeh prop aata hai
 
-  const { collegeId, collegePhotos } = useSession();
-  // collegeId     → kaunsa college selected hai
+  const { collegePhotos, collegeEvents, college } = useSession();
+  // college       → DB se college (name, city)
+  // collegeEvents → DB se is college ke events (filter dropdown)
   // collegePhotos → sirf is college ki photos (session se filtered)
 
-  const college = getCollege(collegeId);
+  
   // College object — naam aur city ke liye
 
   const [search, setSearch] = useState(initialSearch);
@@ -85,7 +82,7 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
   //   [...new Set()] → Set ko wapas array mein convert karo
   //   .sort((a,b) => b-a) → descending (newest year pehle)
 
-  const eventOptions = getEventsForCollege(collegeId ?? "").filter(
+  const eventOptions = collegeEvents.filter(
     (e) => year === "all" || e.year === Number(year)
   );
   // Events list filter karo:
@@ -154,7 +151,7 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
 
         {/* Decorative postmark (top right) */}
         <Postmark
-          label={`${college?.city.toUpperCase()} • CAMPUSLENS • ARCHIVE •`}
+          label={`${(college?.city ?? "").toUpperCase()} • CAMPUSLENS • ARCHIVE •`}
           center={`'${String(new Date().getFullYear()).slice(2)}`}
           className="absolute -top-2 right-0 hidden w-32 -rotate-12 text-teal/60 md:block"
         />

@@ -8,14 +8,14 @@
 
 | Member | Total Kaam | Done | Pending | Progress |
 |--------|-----------|------|---------|----------|
-| **Garvit** 👑 | 32 tasks | 28 | 4 | **🟢 88%** |
+| **Garvit** 👑 | 33 tasks | 32 | 1 | **🟢 97%** |
 | **Japinder** 📸 | 10 tasks | 7 | 3 | **🟡 57%** |
 | **Vansh** 🔍 | 6 tasks | 3 | 3 | **🔴 50%** |
 | **Keshav** 🎨 | 5 tasks | 2 | 3 | **🔴 30%** |
 
 ---
 
-## 👑 GARVIT — 88% Complete
+## 👑 GARVIT — 97% Complete
 
 | # | Kaam | File | Status |
 |---|------|------|--------|
@@ -47,10 +47,11 @@
 | 26 | Vercel deployment + env variables | vercel.com | ✅ Done |
 | 27 | Supabase DB schema (7 tables + RLS) | `supabase/schema.sql` | ✅ Done |
 | 28 | Google OAuth — working end to end | Auth flow complete | ✅ Done |
-| 29 | Real photo upload → Cloudinary | — | ❌ Pending |
-| 30 | Cloudinary signature API route | `app/api/cloudinary-signature/` | ❌ Pending |
-| 31 | Gallery → real Supabase DB photos | — | ❌ Pending |
-| 32 | Profile → real DB data | — | ❌ Pending |
+| 29 | Real photo upload → Cloudinary → Supabase | `app/(main)/upload/page.tsx`, `app/api/photos/route.ts` | ✅ Done (migration 002 run karna hai) |
+| 30 | Cloudinary signature API route | `app/api/cloudinary-signature/route.ts` | ✅ Done |
+| 31 | Gallery → real Supabase DB photos + events | `lib/session.tsx`, `components/GalleryView.tsx` | ✅ Done |
+| 32 | Profile → real DB data (uploader_id se match) | `app/(main)/profile/page.tsx` | ✅ Done |
+| 33 | Missing RLS policies (events/tags/photo_tags insert, same-college profiles) | `supabase/migrations/002_upload_gallery_policies.sql` | ⚠️ SQL Editor mein run karna hai |
 
 ---
 
@@ -129,9 +130,8 @@
 
 | Priority | Kaam | Kaun | Details |
 |----------|------|------|---------|
-| 🔴 1 | Cloudinary signature API banao | **Garvit** | `app/api/cloudinary-signature/route.ts` |
-| 🔴 2 | Real photo upload connect karo | **Garvit** | Upload page → Cloudinary → Supabase DB |
-| 🔴 3 | Gallery → real Supabase photos | **Garvit** | mockData replace karo real DB se |
+| 🔴 1 | Migration 002 Supabase SQL Editor mein run karo | **Garvit** | `supabase/migrations/002_upload_gallery_policies.sql` |
+| 🔴 2 | Live pe upload end-to-end test karo | **Garvit** | Upload → gallery → profile mein dikhe |
 | 🟡 4 | Cloudinary upload helper | **Japinder** | `lib/cloudinary.ts` |
 | 🟡 5 | Photo + Tag queries | **Japinder** | `lib/photoQueries.ts`, `lib/tagQueries.ts` |
 | 🟡 6 | Search API real query | **Vansh** | Supabase se hashtag search |
