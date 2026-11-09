@@ -52,14 +52,11 @@ export default function LoginPage() {
           // wahan session set hoga → /onboarding pe jaayenge
 
           queryParams: {
-            // Google se specifically college email maango
             hd: college!.emailDomains[0].split(".").slice(-2).join("."),
-            // hd = "hosted domain" — Google Workspace accounts filter
-            // "nst.rishihood.edu.in" → "edu.in" → sirf edu.in accounts
-            // Note: yeh sirf suggestion hai, enforce nahi karta
-            // Server-side domain check onboarding mein karenge
             prompt: "select_account",
-            // Har baar account select karne ka option dikhao
+            response_type: "token",
+            // response_type: token → force implicit flow
+            // Supabase PKCE ki jagah seedha token return karega
           },
         },
       });
