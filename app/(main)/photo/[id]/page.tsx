@@ -24,15 +24,15 @@ import { useParams } from "next/navigation";
 // useParams → URL se dynamic parameters nikaalta hai
 // /photo/p1 → { id: "p1" }
 
-import EmptyState from "@/components/EmptyState";
-import ReportButton from "@/components/ReportButton";
+import EmptyState from "@/components/ui/EmptyState";
+import ReportButton from "@/components/features/gallery/ReportButton";
 
-import { filmDate, formatDate, getEventName } from "@/lib/helpers";
+import { filmDate, formatDate, getEventName } from "@/lib/utils/helpers";
 // filmDate    → "'26 3 15" (film camera date stamp)
 // formatDate  → "15 Mar 2026" (readable date)
 // getEventName → event ID se event ka naam
 
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/services/session";
 // Session se collegePhotos — isme se dhundna hai
 
 const inks = ["text-rust", "text-teal", "text-plum", "text-ink"];

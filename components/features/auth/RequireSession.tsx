@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import Developing from "@/components/Developing";
-import { useSession } from "@/lib/session";
+import Developing from "@/components/ui/Developing";
+import { useSession } from "@/lib/services/session";
 
 export default function RequireSession({ children }: { children: React.ReactNode }) {
   const { isReady, supabaseUser, profile } = useSession();

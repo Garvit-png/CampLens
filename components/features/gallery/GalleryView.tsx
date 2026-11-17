@@ -14,10 +14,10 @@
 
 import { useState } from "react";
 
-import EmptyState from "@/components/EmptyState";
-import PhotoCard from "@/components/PhotoCard";
-import Postmark from "@/components/Postmark";
-import TagStamp from "@/components/TagStamp";
+import EmptyState from "@/components/ui/EmptyState";
+import PhotoCard from "@/components/features/gallery/PhotoCard";
+import Postmark from "@/components/ui/Postmark";
+import TagStamp from "@/components/ui/TagStamp";
 
 import {
   cleanHashtag,
@@ -33,9 +33,9 @@ import {
 
   sortNewestFirst,
   // Photos ko newest pehle sort karo
-} from "@/lib/helpers";
+} from "@/lib/utils/helpers";
 
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/services/session";
 // Session se collegeId aur collegePhotos
 
 

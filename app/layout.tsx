@@ -32,14 +32,14 @@ import { Caveat, Courier_Prime, DM_Serif_Display } from "next/font/google";
 // Courier_Prime   → typewriter font (normal body text ke liye)
 // DM_Serif_Display → serif font (headings ke liye — "CampusLens" jaise)
 
-import Footer from "@/components/Footer";
+import Footer from "@/components/layout/Footer";
 // Footer component — har page ke neeche
 // "@/" → project root se path (tsconfig mein set hai)
 
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/layout/Navbar";
 // Navbar component — har page ke upar
 
-import { SessionProvider } from "@/lib/session";
+import { SessionProvider } from "@/lib/services/session";
 // SessionProvider — poori app ko wrap karta hai
 // Iske andar koi bhi page useSession() use kar sakta hai
 

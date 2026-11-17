@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Developing from "@/components/Developing";
+import Developing from "@/components/ui/Developing";
 import { createClient } from "@/lib/supabase/client";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/services/session";
 
 const thisYear = new Date().getFullYear();
 const batchYears: number[] = [];

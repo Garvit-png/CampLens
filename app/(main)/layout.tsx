@@ -15,7 +15,7 @@
 //     └── children (gallery, upload, profile, photo — jo bhi URL pe ho)
 // ============================================================
 
-import RequireSession from "@/components/RequireSession";
+import RequireSession from "@/components/features/auth/RequireSession";
 // Guard component — login check karta hai
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {

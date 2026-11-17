@@ -7,9 +7,9 @@ import {
   MAX_FILES_PER_UPLOAD,
   MAX_FILE_SIZE_MB,
   parseHashtags,
-} from "@/lib/helpers";
+} from "@/lib/utils/helpers";
 import { createClient } from "@/lib/supabase/client";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/services/session";
 
 interface SelectedPhoto {
   file: File;

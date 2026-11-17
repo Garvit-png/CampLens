@@ -7,7 +7,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
-import { extractHashtags, saveHashtagsToDatabase } from '@/lib/hashtags'
+import { extractHashtags, saveHashtagsToDatabase } from '@/lib/services/hashtags'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {

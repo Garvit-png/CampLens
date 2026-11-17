@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Developing from '@/components/Developing'
+import Developing from '@/components/ui/Developing'
 
 export default function ConfirmPage() {
   const router = useRouter()

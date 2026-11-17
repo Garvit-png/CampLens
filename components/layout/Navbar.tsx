@@ -15,7 +15,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useSession } from '@/lib/session';
+import { useSession } from '@/lib/services/session';
 
 const navLinks = [
   { href: '/gallery', label: 'Gallery' },

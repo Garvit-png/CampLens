@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import CollegeStamp from "@/components/CollegeStamp";
-import Developing from "@/components/Developing";
-import Postmark from "@/components/Postmark";
-import { fetchColleges } from "@/lib/collegeQueries";
+import CollegeStamp from "@/components/ui/CollegeStamp";
+import Developing from "@/components/ui/Developing";
+import Postmark from "@/components/ui/Postmark";
+import { fetchColleges } from "@/lib/models/collegeQueries";
 import { createClient } from "@/lib/supabase/client";
 import type { College } from "@/types";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/services/session";
 
 export default function SelectSchoolPage() {
   const { isReady, supabaseUser, profile } = useSession();

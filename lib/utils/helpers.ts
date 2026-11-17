@@ -9,7 +9,7 @@
 // Agar kuch change karna ho — sirf ek jagah change karo.
 // ============================================================
 
-import { colleges, events } from "@/lib/mockData";
+import { colleges, events } from "@/lib/models/mockData";
 // mockData se colleges aur events lists import kar rahe hain
 // Yeh functions unhe use karte hain
 

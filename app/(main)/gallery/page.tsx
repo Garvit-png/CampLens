@@ -12,7 +12,7 @@
 // Isliye "await" use kiya hai — data thodi der mein aata hai.
 // ============================================================
 
-import GalleryView from "@/components/GalleryView";
+import GalleryView from "@/components/features/gallery/GalleryView";
 // GalleryView component — poora gallery UI + filters ismein hain
 
 // ----------------------------------------------------------

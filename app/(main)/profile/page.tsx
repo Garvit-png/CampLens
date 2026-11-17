@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import EmptyState from "@/components/EmptyState";
-import PhotoCard from "@/components/PhotoCard";
-import { sortNewestFirst } from "@/lib/helpers";
-import { useSession } from "@/lib/session";
+import EmptyState from "@/components/ui/EmptyState";
+import PhotoCard from "@/components/features/gallery/PhotoCard";
+import { sortNewestFirst } from "@/lib/utils/helpers";
+import { useSession } from "@/lib/services/session";
 
 export default function ProfilePage() {
   const { supabaseUser, profile, collegePhotos, signOut } = useSession();
