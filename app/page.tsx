@@ -1,5 +1,4 @@
-// Pehla page ("/"): "Select your school".
-// College chuno → login page. Agar pehle se logged in ho to seedha gallery.
+
 "use client";
 
 import { useRouter } from "next/navigation";
