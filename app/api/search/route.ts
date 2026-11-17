@@ -38,7 +38,7 @@ try {
       },
     ]
 
-    // Results return karo
+
     return NextResponse.json({
       results: mockResults,
       total: mockResults.length,
@@ -46,12 +46,12 @@ try {
     })
 
   } catch (error) {
-    // Agar kuch gadbad ho
+
     console.error('Search error:', error)
     return NextResponse.json(
-      { error: 'Search mein kuch problem aayi' },
+      { error: 'Search problem occuredi' },
       { status: 500 }
-      // 500 = Internal Server Error (server ki galti)
+
     )
   }
 }
