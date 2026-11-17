@@ -6,7 +6,7 @@ export async function GET(request:NextRequest) {
 
     // now i will check the tag...if it is empty or if it does not exist 
     // i will then rgiev error using status code and also 
-    // some messege like tag is invalid ig 
+    // some messege like tag is invalid 
     if (!tag||tag.trim()==='')
         {
 
