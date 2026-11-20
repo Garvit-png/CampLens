@@ -44,3 +44,7 @@ next-env.d.ts
 # Personal notes — sirf local, GitHub pe nahi jayega
 team/GARVIT_MERA_KAAM.md
 Understand_your_project.md
+
+# All markdown documentation files - local only
+*.md
+!Readme.md
