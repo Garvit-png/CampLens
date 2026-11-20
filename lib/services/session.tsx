@@ -9,6 +9,7 @@ interface SessionValue {
   supabaseUser: any | null;
   profile: any | null;
   collegeId: string | null;
+  isAdmin: boolean;
   collegePhotos: Photo[];
   collegeEvents: CampusEvent[];
   college: { id: string; name: string; city: string } | null;
@@ -169,6 +170,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   const collegeId = profile?.college_id ?? null;
+  const isAdmin = profile?.role === 'admin';
   const college = profile?.colleges
     ? {
         id: profile.colleges.id as string,
@@ -179,7 +181,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionContext.Provider value={{
-      isReady, supabaseUser, profile, collegeId,
+      isReady, supabaseUser, profile, collegeId, isAdmin,
       collegePhotos, collegeEvents, college, addPhotos, signOut, refreshProfile, reloadPhotos,
     }}>
       {children}
