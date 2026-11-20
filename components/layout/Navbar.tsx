@@ -5,7 +5,7 @@
 // ============================================================
 // Design: Keshav (custom logo, warm paper background, rust accents, responsive)
 // Logic:  Garvit (Supabase session aware)
-//   - Gallery / Upload / Profile links sirf login + onboarding ke baad dikhte hain
+//   - Gallery / Profile links sirf login + onboarding ke baad dikhte hain
 //   - Current page ka link rust color mein highlight hota hai
 //   - Logged in → "Sign out" button, logged out → "Login" button
 // 'use client' isliye kyunki useState (mobile menu) aur useSession (hooks) use hote hain.
@@ -19,7 +19,6 @@ import { useSession } from '@/lib/services/session';
 
 const navLinks = [
   { href: '/gallery', label: 'Gallery' },
-  { href: '/upload', label: 'Upload' },
   { href: '/profile', label: 'Profile' },
 ];
 

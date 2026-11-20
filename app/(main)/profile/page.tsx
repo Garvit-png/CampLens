@@ -59,9 +59,7 @@ export default function ProfilePage() {
       </h2>
 
       {myPhotos.length === 0 ? (
-        <EmptyState title="Your roll is empty" message="Photos you upload will show up here.">
-          <Link href="/upload" className="btn">Upload a photo</Link>
-        </EmptyState>
+        <EmptyState title="Your roll is empty" message="Photos are shared by your college — browse them in the Gallery." />
       ) : (
         <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
           {myPhotos.map((photo, index) => (
