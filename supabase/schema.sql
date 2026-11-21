@@ -145,6 +145,10 @@ CREATE TABLE profiles (
   -- Graduation year. CHECK = allowed range
   -- 1990-2035 ke bahar value insert karne ki koshish → error
 
+  role        TEXT        NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
+  -- 'student' = normal user (sirf dekh sakta hai)
+  -- 'admin'   = college admin (upload, manage kar sakta hai)
+
   is_onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE,
   -- FALSE = user ne abhi college/naam nahi select kiya
   -- TRUE = onboarding complete, gallery access milega
