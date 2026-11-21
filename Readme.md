@@ -8,7 +8,7 @@ CampusLens allows college students to:
 - Sign in using their verified college email.
 - Select their college and identify their batch.
 - Explore photos by year and event.
-- Search for hashtags such as #Damru26 and #Khatam.
+- Search for hashtags such as #Damru26 and #Khatam.\\
 - Upload multiple photos with captions and hashtags.
 - Preserve a shared archive of college memories.
 
