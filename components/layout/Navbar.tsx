@@ -23,7 +23,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { supabaseUser, profile, signOut } = useSession();
+  const { supabaseUser, profile, signOut, isAdmin } = useSession();
   const currentPath = usePathname();
   const router = useRouter();
 
@@ -88,6 +88,11 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+            {isSignedIn && isAdmin && (
+              <Link href="/admin" className={linkClass('/admin', false)}>
+                ⚙ Admin
+              </Link>
+            )}
 
             {isSignedIn ? (
               <button
