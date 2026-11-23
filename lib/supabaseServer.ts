@@ -66,7 +66,7 @@ export async function createClient() {
 
 // USAGE EXAMPLE in an API route:
 //
-// import { createClient } from '@/lib/supabase/server'
+// import { createClient } from '@/lib/supabaseServer'
 //
 // export async function GET() {
 //   const supabase = await createClient()

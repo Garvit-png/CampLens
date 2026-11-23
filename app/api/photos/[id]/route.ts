@@ -11,7 +11,7 @@
 // 4. Delete photo record from Supabase PostgreSQL database
 // ============================================================
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabaseServer'
 import { v2 as cloudinary } from 'cloudinary'
 import { type NextRequest, NextResponse } from 'next/server'
 

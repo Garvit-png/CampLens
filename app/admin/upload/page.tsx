@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useSession } from '@/lib/services/session'
-import { parseHashtags } from '@/lib/utils/helpers'
+import { createClient } from '@/lib/supabaseClient'
+import { useSession } from '@/lib/session'
+import { parseHashtags } from '@/lib/helpers'
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB

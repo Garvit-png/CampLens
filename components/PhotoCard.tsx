@@ -14,7 +14,7 @@
 
 import Link from "next/link";
 
-import { filmDate } from "@/lib/utils/helpers";
+import { filmDate } from "@/lib/helpers";
 // getEventName → sirf mock photos ke liye fallback; real photos mein eventName DB se aata hai
 // filmDate    → "'26 3 15" (film camera date stamp)
 // getEventName → event ID se event ka naam

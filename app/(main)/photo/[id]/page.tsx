@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import EmptyState from "@/components/ui/EmptyState";
-import { filmDate, formatDate } from "@/lib/utils/helpers";
-import { useSession } from "@/lib/services/session";
+import EmptyState from "@/components/EmptyState";
+import { filmDate, formatDate } from "@/lib/helpers";
+import { useSession } from "@/lib/session";
 
 const inks = ["text-rust", "text-teal", "text-plum", "text-ink"];
 

@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Developing from "@/components/ui/Developing";
-import { createClient } from "@/lib/supabase/client";
+import Developing from "@/components/Developing";
+import { createClient } from "@/lib/supabaseClient";
 
 export default function AdminLoginPage() {
   const router = useRouter();

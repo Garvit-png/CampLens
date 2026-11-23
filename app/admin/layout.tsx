@@ -1,8 +1,8 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from '@/lib/services/session'
-import Developing from '@/components/ui/Developing'
+import { useSession } from '@/lib/session'
+import Developing from '@/components/Developing'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAdminReady, isAdmin } = useSession()

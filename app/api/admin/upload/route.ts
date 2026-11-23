@@ -4,9 +4,9 @@
 // 3. Photo metadata DB mein save karo
 import { v2 as cloudinary } from 'cloudinary'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/utils/requireAdmin'
-import { createClient } from '@/lib/supabase/server'
-import { extractHashtags, saveHashtagsToDatabase } from '@/lib/services/hashtags'
+import { requireAdmin } from '@/lib/db'
+import { createClient } from '@/lib/supabaseServer'
+import { extractHashtags, saveHashtagsToDatabase } from '@/lib/db'
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,

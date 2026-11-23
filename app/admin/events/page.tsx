@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useSession } from '@/lib/services/session'
+import { createClient } from '@/lib/supabaseClient'
+import { useSession } from '@/lib/session'
 
 interface Event { id: string; name: string; year: number; event_date: string | null; _count?: number }
 

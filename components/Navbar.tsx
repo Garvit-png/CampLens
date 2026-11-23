@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { useSession } from '@/lib/services/session';
+import { useSession } from '@/lib/session';
 
 export default function Navbar() {
   const { collegeId, college, clearStudent, isAdmin, isAdminReady, adminSignOut } = useSession();

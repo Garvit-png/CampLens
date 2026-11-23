@@ -1,8 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useSession } from '@/lib/services/session'
+import { createClient } from '@/lib/supabaseClient'
+import { useSession } from '@/lib/session'
 
 export default function AdminDashboard() {
   const { collegeId, college } = useSession()

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import Developing from '@/components/ui/Developing'
+import { createClient } from '@/lib/supabaseClient'
+import Developing from '@/components/Developing'
 
 export default function ConfirmPage() {
   const router = useRouter()

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useSession } from '@/lib/services/session'
+import { createClient } from '@/lib/supabaseClient'
+import { useSession } from '@/lib/session'
 
 interface Photo {
   id: string; image_url: string; thumbnail_url: string | null

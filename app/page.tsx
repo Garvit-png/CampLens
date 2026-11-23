@@ -4,11 +4,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import CollegeStamp from "@/components/ui/CollegeStamp";
-import Postmark from "@/components/ui/Postmark";
-import Developing from "@/components/ui/Developing";
-import { createClient } from "@/lib/supabase/client";
-import { useSession } from "@/lib/services/session";
+import CollegeStamp from "@/components/CollegeStamp";
+import Postmark from "@/components/Postmark";
+import Developing from "@/components/Developing";
+import { createClient } from "@/lib/supabaseClient";
+import { useSession } from "@/lib/session";
 import type { College } from "@/types";
 
 const BATCH_YEARS = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + 2 - i);

@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import EmptyState from "@/components/ui/EmptyState";
-import PhotoCard from "@/components/features/gallery/PhotoCard";
-import TagStamp from "@/components/ui/TagStamp";
-import { cleanHashtag, filterPhotos, getPopularTags, sortNewestFirst } from "@/lib/utils/helpers";
-import { useSession } from "@/lib/services/session";
+import EmptyState from "@/components/EmptyState";
+import PhotoCard from "@/components/PhotoCard";
+import TagStamp from "@/components/TagStamp";
+import { cleanHashtag, filterPhotos, getPopularTags, sortNewestFirst } from "@/lib/helpers";
+import { useSession } from "@/lib/session";
 import type { Photo } from "@/types";
 
 const PER_PAGE = 12;
