@@ -10,8 +10,8 @@
 //   - Same tag dobara click → search clear ho jaati hai
 // ============================================================
 
-import { cleanHashtag } from "@/lib/helpers";
-// cleanHashtag → "#Damru26" → "Damru26" (display ke liye clean)
+import { cleanTag } from "@/lib/helpers";
+// cleanTag → "#Damru26" → "Damru26" (display ke liye clean)
 
 interface TagStampProps {
   tag: string;       // Hashtag text (without #)
@@ -39,7 +39,7 @@ export default function TagStamp({ tag, count, index, isActive, onClick }: TagSt
       // !isActive → text-rust (orange-red, normal look)
       // hover:rotate-0 → hover pe seedha ho jaata hai
     >
-      #{cleanHashtag(tag)}
+      #{cleanTag(tag)}
       {/* Display: "#Damru26" — # explicitly add kar rahe hain */}
 
       <span className="ml-1.5 text-[10px] opacity-60">

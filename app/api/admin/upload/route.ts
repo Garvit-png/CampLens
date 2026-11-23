@@ -6,7 +6,8 @@ import { v2 as cloudinary } from 'cloudinary'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/db'
 import { createClient } from '@/lib/supabaseServer'
-import { extractHashtags, saveHashtagsToDatabase } from '@/lib/db'
+import { saveHashtags } from '@/lib/db'
+import { extractTags } from '@/lib/helpers'
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   // Extract hashtags from caption + provided hashtags
   const allTags = [...new Set([
     ...(Array.isArray(hashtags) ? hashtags.filter(Boolean) : []),
-    ...extractHashtags(caption || ''),
+    ...extractTags(caption || ''),
   ])]
 
   const { data: photo, error: photoError } = await supabase
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
   // Save hashtags to tags table
   if (allTags.length > 0) {
     try {
-      await saveHashtagsToDatabase(supabase, photo.id, allTags, profile!.college_id)
+      await saveHashtags(supabase, photo.id, caption, allTags, profile!.college_id)
     } catch (err) {
       console.error('Hashtag save error:', err)
     }

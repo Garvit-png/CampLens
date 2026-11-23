@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import { useSession } from '@/lib/session'
-import { parseHashtags } from '@/lib/helpers'
+import { parseTags } from '@/lib/helpers'
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
@@ -28,7 +28,7 @@ export default function AdminUploadPage() {
   const [hashtagText, setHashtagText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [doneCount, setDoneCount] = useState(0)
-  const hashtags = parseHashtags(hashtagText)
+  const hashtags = parseTags(hashtagText)
 
   // Load events
   useEffect(() => {
