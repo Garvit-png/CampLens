@@ -42,7 +42,6 @@ export default function HomePage() {
   useEffect(() => {
     if (collegeId) router.replace("/gallery");
   }, [collegeId, router]);
-
   function handleCollegePick(id: string) {
     setSelectedCollegeId(id);
     setStep("batch");
