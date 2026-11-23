@@ -14,7 +14,7 @@
 
 import Link from "next/link";
 
-import { filmDate, getEventName } from "@/lib/utils/helpers";
+import { filmDate } from "@/lib/utils/helpers";
 // getEventName → sirf mock photos ke liye fallback; real photos mein eventName DB se aata hai
 // filmDate    → "'26 3 15" (film camera date stamp)
 // getEventName → event ID se event ka naam
@@ -96,7 +96,7 @@ export default function PhotoCard({ photo, index }: PhotoCardProps) {
 
         {/* Event name (small uppercase text) */}
         <p className="mt-1.5 truncate text-[11px] uppercase tracking-widest text-muted">
-          {photo.eventName ?? getEventName(photo.eventId)}
+          {photo.eventName ?? ""}
           {/* Event ID → event naam ("Damru 2026") */}
         </p>
       </div>
