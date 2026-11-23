@@ -1,122 +1,137 @@
 "use client";
+// Home page — college choose karo, batch choose karo, gallery dekho
+// NO LOGIN REQUIRED for students
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import CollegeStamp from "@/components/ui/CollegeStamp";
-import Developing from "@/components/ui/Developing";
 import Postmark from "@/components/ui/Postmark";
-import { fetchColleges } from "@/lib/models/collegeQueries";
+import Developing from "@/components/ui/Developing";
 import { createClient } from "@/lib/supabase/client";
-import type { College } from "@/types";
 import { useSession } from "@/lib/services/session";
+import type { College } from "@/types";
 
-export default function SelectSchoolPage() {
-  const { isReady, supabaseUser, profile } = useSession();
+const BATCH_YEARS = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + 2 - i);
+
+export default function HomePage() {
+  const { collegeId, setCollege, setBatch } = useSession();
   const router = useRouter();
-  const [searchText, setSearchText] = useState("");
-  const [domainError, setDomainError] = useState("");
-  const [colleges, setColleges] = useState<College[] | null>(null);
-  // null = abhi load ho rahe hain
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedCollegeId, setSelectedCollegeId] = useState<string | null>(null);
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [step, setStep] = useState<"college" | "batch">("college");
 
-  // Colleges database se lo (pehle mockData se aate the)
+  // Load colleges from Supabase
   useEffect(() => {
-    let cancelled = false;
-    fetchColleges(createClient()).then((list) => {
-      if (!cancelled) setColleges(list);
-    });
-    return () => {
-      cancelled = true;
-    };
+    createClient()
+      .from("colleges")
+      .select("id, name, city, college_email_domains(domain)")
+      .eq("is_active", true)
+      .then(({ data }) => {
+        if (data) {
+          setColleges(data.map((c: any) => ({
+            id: c.id, name: c.name, city: c.city,
+            emailDomains: c.college_email_domains?.map((d: any) => d.domain) ?? [],
+          })));
+        }
+      });
   }, []);
 
-  const isAlreadySignedIn = isReady && Boolean(supabaseUser) && Boolean(profile?.is_onboarding_complete);
-
+  // Already has college saved? Skip to gallery
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (collegeId) router.replace("/gallery");
+  }, [collegeId, router]);
 
-    // Hash mein access_token hai? → confirm page pe bhejo
-    if (window.location.hash.includes('access_token')) {
-      router.replace('/auth/confirm' + window.location.hash);
-      return;
-    }
-
-    // Domain not allowed error? (onboarding se aaya)
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'domain_not_allowed') {
-      const email = params.get('email') ?? '';
-      const domain = email.split('@')[1] ?? '';
-      setDomainError(
-        `"${domain}" is not a registered college domain. Please use your official college email account.`
-      );
-      window.history.replaceState({}, '', '/');
-    } else if (params.get('error') === 'auth_failed') {
-      const reason = params.get('reason') ?? '';
-      setDomainError(`Sign in failed: ${reason || 'Please try again.'}`);
-      window.history.replaceState({}, '', '/');
-    }
-
-    if (isAlreadySignedIn) router.replace("/gallery");
-  }, [isAlreadySignedIn, router]);
-
-  if (!isReady || isAlreadySignedIn || colleges === null) return <Developing />;
-
-  const query = searchText.trim().toLowerCase();
-  const visibleColleges = colleges.filter(
-    (c) => c.name.toLowerCase().includes(query) || c.city.toLowerCase().includes(query)
-  );
-
-  function handlePick(id: string) {
-    localStorage.setItem("selected_college_id", id);
-    router.push("/login");
+  function handleCollegePick(id: string) {
+    setSelectedCollegeId(id);
+    setStep("batch");
   }
 
+  function handleBatchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedCollegeId) return;
+    setCollege(selectedCollegeId);
+    if (selectedBatch) setBatch(selectedBatch);
+    router.push("/gallery");
+  }
+
+  const filtered = colleges.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.city.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (colleges.length === 0) return <Developing text="Loading colleges…" />;
+
+  // Step 2: Batch selection
+  if (step === "batch") {
+    const college = colleges.find(c => c.id === selectedCollegeId);
+    return (
+      <div className="mx-auto max-w-xl px-6 py-20 text-center">
+        <p className="label">Step 2 of 2</p>
+        <h1 className="font-serif text-4xl mt-2">What's your batch?</h1>
+        <p className="mt-3 text-muted text-sm">
+          Selected: <strong>{college?.name}</strong>
+        </p>
+        <form onSubmit={handleBatchSubmit} className="mt-8 space-y-4">
+          <select
+            value={selectedBatch}
+            onChange={e => setSelectedBatch(e.target.value)}
+            className="field w-full text-center text-lg"
+          >
+            <option value="">Select batch (optional)</option>
+            {BATCH_YEARS.map(y => (
+              <option key={y} value={y}>Class of {y}</option>
+            ))}
+          </select>
+          <button type="submit" className="btn w-full py-4 text-lg">
+            Open the Archive →
+          </button>
+          <button type="button" onClick={() => setStep("college")}
+            className="text-sm text-muted underline underline-offset-4">
+            ← Change college
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // Step 1: College selection
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+    <div className="mx-auto max-w-6xl px-6 py-16">
       <section className="relative">
-        <p className="label">Step 1 of 3 · Choose your campus</p>
-        <h1 className="max-w-3xl font-serif text-5xl leading-[1.05] md:text-7xl">
+        <p className="label">Step 1 of 2 · Choose your campus</p>
+        <h1 className="max-w-3xl font-serif text-5xl leading-tight md:text-7xl">
           Select your school.
         </h1>
-        <p className="mt-5 max-w-lg text-muted">
-          Every campus keeps its own archive. Pick yours to see its fests, farewells and late nights — in prints.
+        <p className="mt-4 max-w-lg text-muted">
+          Every campus keeps its own archive of memories.
         </p>
         <Postmark
           label="CAMPUSLENS • ARCHIVE • EST 2026 •"
           center="POST"
           className="absolute -top-4 right-0 hidden w-36 rotate-12 text-rust/70 md:block"
         />
-
-        {/* Domain error message */}
-        {domainError && (
-          <div className="mt-6 rounded-md border-2 border-rust bg-rust/5 px-4 py-3">
-            <p className="text-sm font-bold text-rust">⚠ Access Denied</p>
-            <p className="mt-1 text-sm text-rust/80">{domainError}</p>
-          </div>
-        )}
-
         <input
           type="search"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
           placeholder="Search by college or city…"
-          aria-label="Search colleges"
-          className="field mt-10 max-w-md"
+          className="field mt-8 max-w-md"
         />
       </section>
 
-      {visibleColleges.length === 0 ? (
-        <p className="mt-16 text-muted">No college matches &quot;{searchText}&quot;.</p>
+      {filtered.length === 0 ? (
+        <p className="mt-16 text-muted">No college matches "{search}".</p>
       ) : (
-        <div className="mt-14 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {visibleColleges.map((college, index) => (
+        <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {filtered.map((college, index) => (
             <button
               key={college.id}
               type="button"
-              onClick={() => handlePick(college.id)}
-              className={`text-left transition duration-300 hover:-translate-y-2 hover:rotate-0 ${
-                index % 2 === 0 ? "-rotate-2" : "rotate-2"
-              }`}
-              aria-label={`Select ${college.name}`}
+              onClick={() => handleCollegePick(college.id)}
+              className={`text-left transition duration-300 hover:-translate-y-2 hover:rotate-0
+                ${index % 2 === 0 ? "-rotate-2" : "rotate-2"}`}
             >
               <CollegeStamp college={college} index={index} />
             </button>

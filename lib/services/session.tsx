@@ -1,188 +1,161 @@
 "use client";
 
+// ============================================================
+// SESSION — Do alag sessions hain:
+// 1. STUDENT session: localStorage mein collegeId + batchYear
+//    No login needed. User college choose kare, batch choose kare — bas.
+// 2. ADMIN session: Supabase Auth se. Admin login kare tab.
+// ============================================================
+
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CampusEvent, Photo } from "@/types";
 
 interface SessionValue {
-  isReady: boolean;
-  supabaseUser: any | null;
-  profile: any | null;
+  // Student state (no login)
   collegeId: string | null;
-  isAdmin: boolean;
-  collegePhotos: Photo[];
-  collegeEvents: CampusEvent[];
+  batchYear: string | null;
   college: { id: string; name: string; city: string } | null;
-  addPhotos: (newPhotos: Photo[]) => void;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-  reloadPhotos: () => Promise<void>;
+  setCollege: (id: string) => void;
+  setBatch: (year: string) => void;
+  clearStudent: () => void;
+
+  // Photos + events (filtered by college)
+  photos: Photo[];
+  events: CampusEvent[];
+  refreshCollege: () => Promise<void>;
+
+  // Admin state (Supabase login)
+  isAdminReady: boolean;
+  isAdmin: boolean;
+  adminSignOut: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
 
+const STUDENT_KEY = "camplens-student"; // { collegeId, batchYear }
+
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [isReady, setIsReady] = useState(false);
-  const [supabaseUser, setSupabaseUser] = useState<any | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
-  const [collegePhotos, setCollegePhotos] = useState<Photo[]>([]);
-  const [collegeEvents, setCollegeEvents] = useState<CampusEvent[]>([]);
+  // ---- Student state ----
+  const [collegeId, setCollegeId] = useState<string | null>(null);
+  const [batchYear, setBatchYear] = useState<string | null>(null);
+  const [college, setCollegeObj] = useState<{ id: string; name: string; city: string } | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [events, setEvents] = useState<CampusEvent[]>([]);
+
+  // ---- Admin state ----
+  const [isAdminReady, setIsAdminReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
-  // Supabase se real photos load karo
-  async function loadPhotos(collegeId: string) {
-    const { data, error } = await supabase
+  // Load student from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STUDENT_KEY);
+    if (saved) {
+      try {
+        const { collegeId: cid, batchYear: by } = JSON.parse(saved);
+        if (cid) {
+          setCollegeId(cid);
+          if (by) setBatchYear(by);
+          loadCollegeData(cid);
+        }
+      } catch { localStorage.removeItem(STUDENT_KEY); }
+    }
+  }, []);
+
+  // Admin: Supabase auth listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("role, colleges(name, id, city)")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        setIsAdmin(data?.role === "admin");
+      } else {
+        setIsAdmin(false);
+      }
+      if (event === "INITIAL_SESSION") setIsAdminReady(true);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function loadCollegeData(cid: string) {
+    // Load college info
+    const { data: col } = await supabase
+      .from("colleges").select("id, name, city").eq("id", cid).single();
+    if (col) setCollegeObj(col);
+
+    // Load photos
+    const { data: photoData } = await supabase
       .from("photos")
-      .select(`
-        id,
-        image_url,
-        thumbnail_url,
-        caption,
-        hashtags,
-        year,
-        uploaded_at,
-        event_id,
-        college_id,
-        uploader_id,
-        profiles ( full_name ),
-        events ( name )
-      `)
-      .eq("college_id", collegeId)
+      .select("id, image_url, thumbnail_url, caption, hashtags, year, uploaded_at, event_id, college_id, uploader_id, profiles(full_name), events(name)")
+      .eq("college_id", cid)
       .eq("is_approved", true)
       .order("uploaded_at", { ascending: false })
       .limit(200);
 
-    if (error) {
-      console.error("Photos load error:", error.message);
-      return;
+    if (photoData) {
+      setPhotos(photoData.map((p: any) => ({
+        id: p.id, collegeId: p.college_id,
+        imageUrl: p.image_url, caption: p.caption ?? "",
+        hashtags: p.hashtags ?? [], eventId: p.event_id ?? "",
+        year: p.year ?? new Date().getFullYear(),
+        uploaderName: p.profiles?.full_name ?? "Admin",
+        uploadedAt: p.uploaded_at?.slice(0, 10) ?? "",
+        uploaderId: p.uploader_id,
+        eventName: p.events?.name ?? undefined,
+        thumbnailUrl: p.thumbnail_url ?? undefined,
+      })));
     }
 
-    // Supabase snake_case → TypeScript camelCase convert karo
-    const photos: Photo[] = (data ?? []).map((p: any) => ({
-      id: p.id,
-      collegeId: p.college_id,
-      imageUrl: p.image_url,
-      caption: p.caption ?? "",
-      hashtags: p.hashtags ?? [],
-      eventId: p.event_id ?? "",
-      year: p.year ?? new Date().getFullYear(),
-      uploaderName: p.profiles?.full_name ?? "Unknown",
-      uploadedAt: p.uploaded_at?.slice(0, 10) ?? "",
-      uploaderId: p.uploader_id,
-      eventName: p.events?.name ?? undefined,
-      thumbnailUrl: p.thumbnail_url ?? undefined,
-    }));
-
-    setCollegePhotos(photos);
-  }
-
-  // College ke saare events (gallery filter dropdown ke liye)
-  async function loadEvents(collegeId: string) {
-    const { data, error } = await supabase
-      .from("events")
-      .select("id, college_id, name, year")
-      .eq("college_id", collegeId)
-      .order("year", { ascending: false });
-
-    if (error) {
-      console.error("Events load error:", error.message);
-      return;
-    }
-
-    setCollegeEvents(
-      (data ?? []).map((e: { id: string; college_id: string; name: string; year: number }) => ({
-        id: e.id,
-        collegeId: e.college_id,
-        name: e.name,
-        year: e.year,
-      }))
-    );
-  }
-
-  async function loadProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*, colleges(name, id, city)")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (error) console.error("Profile load error:", error.message);
-    setProfile(data ?? null);
-
-    // Profile milte hi photos load karo
-    if (data?.college_id) {
-      await Promise.all([loadPhotos(data.college_id), loadEvents(data.college_id)]);
+    // Load events
+    const { data: eventData } = await supabase
+      .from("events").select("id, college_id, name, year")
+      .eq("college_id", cid).order("year", { ascending: false });
+    if (eventData) {
+      setEvents(eventData.map((e: any) => ({
+        id: e.id, collegeId: e.college_id, name: e.name, year: e.year,
+      })));
     }
   }
 
-  useEffect(() => {
-    let mounted = true;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        if (session?.user) {
-          setSupabaseUser(session.user);
-          await loadProfile(session.user.id);
-        } else {
-          setSupabaseUser(null);
-          setProfile(null);
-          setCollegePhotos([]);
-          setCollegeEvents([]);
-        }
-
-        if (event === "INITIAL_SESSION") {
-          setIsReady(true);
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function refreshProfile() {
-    if (supabaseUser) await loadProfile(supabaseUser.id);
+  function setCollege(id: string) {
+    setCollegeId(id);
+    const existing = JSON.parse(localStorage.getItem(STUDENT_KEY) || "{}");
+    localStorage.setItem(STUDENT_KEY, JSON.stringify({ ...existing, collegeId: id }));
+    loadCollegeData(id);
   }
 
-  // Upload ke baad photos reload karo
-  async function reloadPhotos() {
-    if (profile?.college_id) {
-      await Promise.all([loadPhotos(profile.college_id), loadEvents(profile.college_id)]);
-    }
+  function setBatch(year: string) {
+    setBatchYear(year);
+    const existing = JSON.parse(localStorage.getItem(STUDENT_KEY) || "{}");
+    localStorage.setItem(STUDENT_KEY, JSON.stringify({ ...existing, batchYear: year }));
   }
 
-  // addPhotos: Optimistic update — DB pe bhi save hota hai via API
-  function addPhotos(newPhotos: Photo[]) {
-    setCollegePhotos(prev => [...newPhotos, ...prev]);
+  function clearStudent() {
+    setCollegeId(null); setBatchYear(null); setCollegeObj(null);
+    setPhotos([]); setEvents([]);
+    localStorage.removeItem(STUDENT_KEY);
   }
 
-  async function signOut() {
+  async function refreshCollege() {
+    if (collegeId) await loadCollegeData(collegeId);
+  }
+
+  async function adminSignOut() {
     await supabase.auth.signOut();
-    setSupabaseUser(null);
-    setProfile(null);
-    setCollegePhotos([]);
-    setCollegeEvents([]);
+    setIsAdmin(false);
   }
-
-  const collegeId = profile?.college_id ?? null;
-  const isAdmin = profile?.role === 'admin';
-  const college = profile?.colleges
-    ? {
-        id: profile.colleges.id as string,
-        name: (profile.colleges.name as string) ?? "",
-        city: (profile.colleges.city as string) ?? "",
-      }
-    : null;
 
   return (
     <SessionContext.Provider value={{
-      isReady, supabaseUser, profile, collegeId, isAdmin,
-      collegePhotos, collegeEvents, college, addPhotos, signOut, refreshProfile, reloadPhotos,
+      collegeId, batchYear, college, setCollege, setBatch, clearStudent,
+      photos, events, refreshCollege,
+      isAdminReady, isAdmin, adminSignOut,
     }}>
       {children}
     </SessionContext.Provider>
@@ -190,7 +163,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useSession(): SessionValue {
-  const session = useContext(SessionContext);
-  if (!session) throw new Error("useSession() must be inside <SessionProvider>");
-  return session;
+  const s = useContext(SessionContext);
+  if (!s) throw new Error("useSession() must be inside <SessionProvider>");
+  return s;
 }

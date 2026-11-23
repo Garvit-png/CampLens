@@ -47,10 +47,10 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
   // initialSearch → URL se aaya tag (jaise "?tag=Damru26")
   // Gallery page se yeh prop aata hai
 
-  const { collegePhotos, collegeEvents, college } = useSession();
-  // college       → DB se college (name, city)
-  // collegeEvents → DB se is college ke events (filter dropdown)
-  // collegePhotos → sirf is college ki photos (session se filtered)
+  const { photos, events, college } = useSession();
+  // college → DB se college (name, city)
+  // events → DB se is college ke events (filter dropdown)
+  // photos → sirf is college ki photos (session se filtered)
 
   
   // College object — naam aur city ke liye
@@ -72,17 +72,17 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
   // DERIVED VALUES (har render pe calculate hote hain)
   // ----------------------------------------------------------
 
-  const popularTags = getPopularTags(collegePhotos);
+  const popularTags = getPopularTags(photos);
   // Sabse zyada use wale hashtags — "Popular stamps" section ke liye
 
-  const years = [...new Set(collegePhotos.map((p) => p.year))].sort((a, b) => b - a);
+  const years = [...new Set(photos.map((p) => p.year))].sort((a, b) => b - a);
   // Unique years nikaalo:
-  //   collegePhotos.map(p => p.year) → [2026, 2026, 2025, 2024, ...]
+  //   photos.map(p => p.year) → [2026, 2026, 2025, 2024, ...]
   //   new Set(...) → unique values: [2026, 2025, 2024]
   //   [...new Set()] → Set ko wapas array mein convert karo
   //   .sort((a,b) => b-a) → descending (newest year pehle)
 
-  const eventOptions = collegeEvents.filter(
+  const eventOptions = events.filter(
     (e) => year === "all" || e.year === Number(year)
   );
   // Events list filter karo:
@@ -92,7 +92,7 @@ export default function GalleryView({ initialSearch }: { initialSearch: string }
 
   // FILTERED + SORTED PHOTOS
   const matchingPhotos = sortNewestFirst(
-    filterPhotos(collegePhotos, { search, year, eventId })
+    filterPhotos(photos, { search, year, eventId })
   );
   // 1. filterPhotos → teen filters lagao (year, event, search)
   // 2. sortNewestFirst → naye photos pehle

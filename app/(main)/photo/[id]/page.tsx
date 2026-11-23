@@ -33,7 +33,7 @@ import { filmDate, formatDate, getEventName } from "@/lib/utils/helpers";
 // getEventName → event ID se event ka naam
 
 import { useSession } from "@/lib/services/session";
-// Session se collegePhotos — isme se dhundna hai
+// Session se photos — isme se dhundna hai
 
 const inks = ["text-rust", "text-teal", "text-plum", "text-ink"];
 // Tag stamp colors — cyclic: 4 colors repeat hote hain
@@ -44,10 +44,10 @@ export default function PhotoDetailPage() {
   // URL se "id" parameter nikaalo
   // <{ id: string }> → TypeScript generic: id ek string hai
 
-  const { collegePhotos } = useSession();
+  const { photos } = useSession();
   // Session se photos lo — sirf apne college ki
 
-  const photo = collegePhotos.find((p) => p.id === id);
+  const photo = photos.find((p) => p.id === id);
   // ID se photo dhundho — agar nahi mili to undefined
 
   // ----------------------------------------------------------

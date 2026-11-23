@@ -1,25 +1,22 @@
 'use client'
-// Admin layout — sirf admin role wale access kar sakte hain
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/services/session'
 import Developing from '@/components/ui/Developing'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isReady, supabaseUser, isAdmin } = useSession()
+  const { isAdminReady, isAdmin } = useSession()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isReady) return
-    if (!supabaseUser) { router.replace('/login'); return }
-    if (!isAdmin) { router.replace('/gallery'); return }
-  }, [isReady, supabaseUser, isAdmin, router])
+    if (!isAdminReady) return
+    if (!isAdmin) { router.replace('/login'); return }
+  }, [isAdminReady, isAdmin, router])
 
-  if (!isReady || !supabaseUser || !isAdmin) return <Developing text="Checking permissions…" />
+  if (!isAdminReady || !isAdmin) return <Developing text="Checking permissions…" />
 
   return (
     <div className="min-h-screen bg-paper">
-      {/* Admin sub-nav */}
       <div className="border-b-2 border-ink bg-ink text-paper-light">
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3 text-xs font-bold uppercase tracking-widest">
           <span className="text-rust">Admin Panel</span>

@@ -21,17 +21,12 @@ export default function ConfirmPage() {
         return
       }
 
-      // IMPORTANT: code ko manually exchange MAT karo.
-      // @supabase/ssr ka browser client hamesha PKCE use karta hai aur
-      // detectSessionInUrl=true hai, toh client init hote hi woh ?code= ko
-      // khud exchange kar leta hai aur code_verifier delete kar deta hai.
-      // Doosri baar exchangeCodeForSession call karne se error aata tha.
-      // getSession() init (aur us auto-exchange) ke complete hone ka wait karta hai.
       const supabase = createClient()
       const { data, error: sessionError } = await supabase.auth.getSession()
 
       if (data.session) {
-        router.replace('/onboarding')
+        // Check if user is admin - we'll redirect to admin, but admin layout will verify
+        router.replace('/admin')
         return
       }
 
