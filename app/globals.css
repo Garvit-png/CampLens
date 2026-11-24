@@ -67,26 +67,7 @@ body {
   }
 }
 
-/* ─── Falling words animation (home page background) ─── */
-@keyframes fall {
-  0%   { transform: translateY(-120px) rotate(var(--r)); opacity: 0; }
-  10%  { opacity: 0.18; }
-  85%  { opacity: 0.18; }
-  100% { transform: translateY(calc(100vh + 60px)) rotate(var(--r)); opacity: 0; }
-}
-
-.falling-word {
-  position: absolute;
-  font-family: var(--font-serif);
-  font-size: clamp(1.1rem, 2.5vw, 2rem);
-  color: var(--color-ink);
-  opacity: 0;
-  pointer-events: none;
-  user-select: none;
-  animation: fall linear infinite;
-  white-space: nowrap;
-}
-
+/* Postage stamp ke kinare ke gol chhed (perforation).
    Trick: "mask" se kinaare pe chhote gol hisse transparent kar dete hain. */
 .postage {
   --hole: 5px;
