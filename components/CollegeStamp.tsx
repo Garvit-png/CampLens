@@ -11,7 +11,7 @@
 //   - Har college ka alag color (cyclic)
 // ============================================================
 
-import { getInitials } from "@/lib/helpers";
+import { getInitials } from "@/lib/utils";
 // getInitials → "Rishihood University" → "RU"
 
 import type { College } from "@/types";

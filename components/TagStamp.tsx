@@ -10,7 +10,7 @@
 //   - Same tag dobara click → search clear ho jaati hai
 // ============================================================
 
-import { cleanTag } from "@/lib/helpers";
+import { cleanTag } from "@/lib/utils";
 // cleanTag → "#Damru26" → "Damru26" (display ke liye clean)
 
 interface TagStampProps {

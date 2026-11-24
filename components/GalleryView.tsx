@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 import PhotoCard from "@/components/PhotoCard"
 import TagStamp from "@/components/TagStamp"
 import EmptyState from "@/components/EmptyState"
-import { cleanTag, filterPhotos, popularTags as getPopular, newestFirst } from "@/lib/helpers"
+import { cleanTag, filterPhotos, popularTags as getPopular, newestFirst } from "@/lib/utils"
 import { useSession } from "@/lib/session"
 import type { Photo } from "@/types"
 

@@ -74,3 +74,8 @@ supabase/schema.sql       ← Database tables SQL (run once in Supabase dashboar
 | Auth | Google OAuth (sirf admin) |
 | Images | Cloudinary |
 | Deploy | Vercel |
+
+
+
+
+middle ware, router and server 

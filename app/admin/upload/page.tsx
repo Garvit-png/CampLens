@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabaseClient"
 import { useSession } from "@/lib/session"
-import { parseTags } from "@/lib/helpers"
+import { parseTags } from "@/lib/utils"
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"]
 const MAX_MB   = 10

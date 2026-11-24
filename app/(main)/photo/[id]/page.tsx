@@ -7,7 +7,7 @@
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import EmptyState from "@/components/EmptyState"
-import { filmDate, formatDate } from "@/lib/helpers"
+import { filmDate, formatDate } from "@/lib/utils"
 import { useSession } from "@/lib/session"
 
 // Hashtag colors — cycle karte hain

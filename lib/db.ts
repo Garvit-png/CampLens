@@ -10,7 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { College } from "@/types"
 import { createClient } from "@/lib/supabaseServer"
 import { NextResponse } from "next/server"
-import { extractTags } from "@/lib/helpers"
+import { extractTags } from "@/lib/utils"
 
 // ── Colleges ──────────────────────────────────
 
