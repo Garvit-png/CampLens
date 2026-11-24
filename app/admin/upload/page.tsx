@@ -28,7 +28,8 @@ interface FileItem {
 interface Event { id: string; name: string; year: number }
 
 export default function AdminUploadPage() {
-  const { collegeId, refreshPhotos } = useSession()
+  const { collegeId, adminCollegeId, refreshPhotos } = useSession()
+  const effectiveCollegeId = adminCollegeId ?? collegeId
   const [files, setFiles]       = useState<FileItem[]>([])
   const [events, setEvents]     = useState<Event[]>([])
   const [eventId, setEventId]   = useState("")
@@ -41,11 +42,11 @@ export default function AdminUploadPage() {
 
   // College ke events load karo
   useEffect(() => {
-    if (!collegeId) return
-    createClient().from("events").select("id, name, year").eq("college_id", collegeId)
+    if (!effectiveCollegeId) return
+    createClient().from("events").select("id, name, year").eq("college_id", effectiveCollegeId)
       .order("year", { ascending: false })
       .then(({ data }) => { if (data) setEvents(data) })
-  }, [collegeId])
+  }, [effectiveCollegeId])
 
   // Files choose karo → validate karo
   function onFilePick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -68,9 +69,9 @@ export default function AdminUploadPage() {
 
   // Naya event DB mein save karo
   async function createEvent(): Promise<string | null> {
-    if (!newEvent.trim() || !collegeId) return null
+    if (!newEvent.trim() || !effectiveCollegeId) return null
     const { data } = await createClient().from("events")
-      .insert({ college_id: collegeId, name: newEvent.trim(), year: new Date().getFullYear() })
+      .insert({ college_id: effectiveCollegeId, name: newEvent.trim(), year: new Date().getFullYear() })
       .select("id, name, year").single()
     if (!data) return null
     setEvents(prev => [data, ...prev])  // List mein add karo

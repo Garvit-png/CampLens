@@ -31,6 +31,7 @@ interface AppState {
   // Admin
   isAdmin: boolean               // Kya current user admin hai?
   isAdminReady: boolean          // Admin check complete hua?
+  adminCollegeId: string | null  // Admin ke profile ka college_id (localStorage se independent)
   adminSignOut: () => Promise<void>  // Admin logout
 }
 
@@ -47,6 +48,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<CampusEvent[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminReady, setIsAdminReady] = useState(false)
+  const [adminCollegeId, setAdminCollegeId] = useState<string | null>(null)
 
   // Supabase client — ek baar banao, reuse karo
   const sb = useRef(createClient()).current
@@ -65,10 +67,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data } = await sb.from("profiles").select("role").eq("user_id", session.user.id).maybeSingle()
+        const { data } = await sb.from("profiles").select("role, college_id").eq("user_id", session.user.id).maybeSingle()
         setIsAdmin(data?.role === "admin")
+        setAdminCollegeId(data?.college_id ?? null)
       } else {
         setIsAdmin(false)
+        setAdminCollegeId(null)
       }
       if (event === "INITIAL_SESSION") setIsAdminReady(true)
     })
@@ -144,10 +148,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   async function adminSignOut() {
     await sb.auth.signOut()
     setIsAdmin(false)
+    setAdminCollegeId(null)
   }
 
   return (
-    <Ctx.Provider value={{ collegeId, batchYear, college, photos, events, setCollege, setBatch, clearStudent, refreshPhotos, isAdmin, isAdminReady, adminSignOut }}>
+    <Ctx.Provider value={{ collegeId, batchYear, college, photos, events, setCollege, setBatch, clearStudent, refreshPhotos, isAdmin, isAdminReady, adminCollegeId, adminSignOut }}>
       {children}
     </Ctx.Provider>
   )

@@ -1,16 +1,3 @@
-// ============================================================
-// FILE: app/api/photos/[id]/route.ts — PHOTO DELETE API
-// ============================================================
-// [id] = dynamic route segment in Next.js App Router
-// Calling DELETE /api/photos/123 -> id = "123"
-//
-// FLOW:
-// 1. Verify user is authenticated with Supabase session
-// 2. Fetch photo record from DB to verify ownership
-// 3. Delete image asset from Cloudinary storage
-// 4. Delete photo record from Supabase PostgreSQL database
-// ============================================================
-
 import { createClient } from '@/lib/supabaseServer'
 import { v2 as cloudinary } from 'cloudinary'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -38,13 +25,22 @@ export async function DELETE(
     )
   }
 
+  // Check if the authenticated user is an admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, college_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const isAdmin = profile?.role === 'admin'
+
   // Next.js 15/16: params is a Promise that must be awaited
   const { id } = await params
 
   // 2. Fetch photo from database to check ownership and retrieve Cloudinary public ID
   const { data: photo, error: fetchError } = await supabase
     .from('photos')
-    .select('id, cloudinary_public_id, uploader_id, profiles(user_id)')
+    .select('id, cloudinary_public_id, uploader_id, college_id, profiles(user_id)')
     .eq('id', id)
     .single()
 
@@ -55,15 +51,24 @@ export async function DELETE(
     )
   }
 
-  // 3. Security check: Only the photo uploader can delete their photo
-  const profileData = Array.isArray(photo.profiles) ? photo.profiles[0] : photo.profiles
-  const uploaderUserId = (profileData as { user_id: string } | null)?.user_id
-
-  if (uploaderUserId !== user.id) {
-    return NextResponse.json(
-      { error: 'Not authorized' },
-      { status: 403 } // 403 Forbidden: authenticated user lacks permission
-    )
+  // 3. Security check: Admin can delete any photo in their college; others must own it
+  if (isAdmin) {
+    // Admin can delete photos only within their own college
+    if (profile?.college_id !== photo.college_id) {
+      return NextResponse.json(
+        { error: 'Not authorized' },
+        { status: 403 }
+      )
+    }
+  } else {
+    const profileData = Array.isArray(photo.profiles) ? photo.profiles[0] : photo.profiles
+    const uploaderUserId = (profileData as { user_id: string } | null)?.user_id
+    if (uploaderUserId !== user.id) {
+      return NextResponse.json(
+        { error: 'Not authorized' },
+        { status: 403 }
+      )
+    }
   }
 
   // 4. Delete the file from Cloudinary (storage cleanup)

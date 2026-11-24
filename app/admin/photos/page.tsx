@@ -11,17 +11,18 @@ import { useSession } from "@/lib/session"
 interface Photo { id: string; image_url: string; thumbnail_url: string | null; caption: string; is_approved: boolean; uploaded_at: string }
 
 export default function AdminPhotosPage() {
-  const { collegeId } = useSession()
+  const { collegeId, adminCollegeId } = useSession()
+  const effectiveCollegeId = adminCollegeId ?? collegeId
   const [photos, setPhotos] = useState<Photo[]>([])
   const [filter, setFilter] = useState<"all" | "approved" | "pending">("all")
   const [loading, setLoading] = useState(true)
 
   async function load() {
-    if (!collegeId) return
+    if (!effectiveCollegeId) return
     setLoading(true)
     let q = createClient().from("photos")
       .select("id, image_url, thumbnail_url, caption, is_approved, uploaded_at")
-      .eq("college_id", collegeId)
+      .eq("college_id", effectiveCollegeId)
       .order("uploaded_at", { ascending: false })
     if (filter === "approved") q = q.eq("is_approved", true)
     if (filter === "pending")  q = q.eq("is_approved", false)
@@ -29,7 +30,7 @@ export default function AdminPhotosPage() {
     if (data) setPhotos(data as Photo[])
     setLoading(false)
   }
-  useEffect(() => { load() }, [collegeId, filter])
+  useEffect(() => { load() }, [effectiveCollegeId, filter])
 
   // Approve / Unapprove toggle
   async function toggle(id: string, current: boolean) {
