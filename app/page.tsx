@@ -10,7 +10,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import CollegeStamp from "@/components/CollegeStamp"
-import Postmark from "@/components/Postmark"
 import Developing from "@/components/Developing"
 import { createClient } from "@/lib/supabaseClient"
 import { useSession } from "@/lib/session"
@@ -106,9 +105,18 @@ export default function HomePage() {
         <h1 className="max-w-3xl font-serif text-5xl leading-tight md:text-7xl">Select your school.</h1>
         <p className="mt-4 max-w-lg text-muted">Every campus keeps its own archive of memories.</p>
 
-        {/* Decorative postmark stamp (top right) */}
-        <Postmark label="CAMPUSLENS • ARCHIVE • EST 2026 •" center="POST"
-          className="absolute -top-4 right-0 hidden w-36 rotate-12 text-rust/70 md:block" />
+        {/* Decorative circular stamp — just visual */}
+        <div className="absolute -top-4 right-0 hidden w-36 md:block opacity-70">
+          <svg viewBox="0 0 120 120" className="rotate-12 text-rust/70">
+            <defs><path id="ring" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>
+            <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" strokeWidth="2.5"/>
+            <circle cx="60" cy="60" r="33" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+            <text fontSize="9" letterSpacing="2.2" fontWeight="700" fill="currentColor">
+              <textPath href="#ring">CAMPUSLENS • ARCHIVE • EST 2026 •</textPath>
+            </text>
+            <text x="60" y="66" textAnchor="middle" fontSize="17" fontWeight="700" fill="currentColor">POST</text>
+          </svg>
+        </div>
 
         {/* Search input */}
         <input type="search" value={search} onChange={e => setSearch(e.target.value)}
